@@ -6,7 +6,7 @@ Plan source:
 - `docs/PRD.md`
 - `docs/TECH_SPEC.md`
 
-Current status: Step 7 complete; implementation commits in progress.
+Current status: Step 8 complete; implementation commits in progress.
 
 Update rule: after each completed plan step, update this file with the completed step,
 validation results, commit reference when available, current status, and the next step.
@@ -21,7 +21,7 @@ validation results, commit reference when available, current status, and the nex
 - [x] Step 5: Candidate Review Interaction
 - [x] Step 6: Scope Recommendation And Target Path Resolution
 - [x] Step 7: Embedded Generation Template And Agent Invocation
-- [ ] Step 8: Draft Workspace, Editor, And Validation
+- [x] Step 8: Draft Workspace, Editor, And Validation
 - [ ] Step 9: Final Skill Writes And Draft Cleanup
 - [ ] Step 10: End-To-End Interactive Session Coverage
 - [ ] Step 11: Release And npm Publishing Automation
@@ -82,5 +82,12 @@ validation results, commit reference when available, current status, and the nex
 
 - Status: complete.
 - Validation: versioned embedded generation prompt, supported executable detection, command construction, approval-gated drafting, and command runner abstraction added.
-- Commit: pending.
+- Commit: `2614059 feat: draft skills with approved local agent invocation`.
 - Next step: Step 8, draft workspace, editor, and validation.
+
+### Step 8
+
+- Status: complete.
+- Validation: atomic file writes, editor fallback, built-in SKILL.md structural validation, warnings, and optional agnix integration added.
+- Commit: pending.
+- Next step: Step 9, final skill writes and draft cleanup.
