@@ -24,7 +24,7 @@ validation results, commit reference when available, current status, and the nex
 - [x] Step 8: Draft Workspace, Editor, And Validation
 - [x] Step 9: Final Skill Writes And Draft Cleanup
 - [x] Step 10: End-To-End Interactive Session Coverage
-- [x] Step 11: Release And npm Publishing Automation
+- [x] Step 11: Release And Bun Publishing Automation
 - [x] Step 12: Production Readiness Documentation And Final MVP Audit
 
 ## Update Log
@@ -39,7 +39,7 @@ validation results, commit reference when available, current status, and the nex
 ### Step 1
 
 - Status: complete.
-- Validation: npm project scaffold, strict TypeScript config, Biome, Vitest, CI, and aggregate scripts added.
+- Validation: Bun project scaffold, strict TypeScript config, Biome, Vitest, CI, and aggregate scripts added.
 - Commit: `d73c306 build: scaffold typescript quality gates`.
 - Next step: Step 2, CLI entry flow skeleton.
 
@@ -104,22 +104,22 @@ validation results, commit reference when available, current status, and the nex
 - Status: complete.
 - Validation: fixture-driven unit and integration tests cover parsers, prompt ranking, path safety, validation, and a full interactive session without real history or real skill roots.
 - Commit: `8500787 test: cover ritual end-to-end session flow`.
-- Next step: Step 11, release and npm publishing automation.
+- Next step: Step 11, release and bun publishing automation.
 
 ### Step 11
 
 - Status: complete.
-- Validation: release workflow triggers on `v*` tags, runs `npm ci`, `npm run verify`, package dry-run, npm publish with provenance, and GitHub Release creation.
-- Commit: `d8a5d4d ci: add npm release automation`.
+- Validation: release workflow triggers on `v*` tags, runs `bun install --frozen-lockfile`, `bun run verify`, package dry-run, `bun publish`, and GitHub Release creation.
+- Commit: pending after Bun migration.
 - Next step: Step 12, production readiness documentation and final MVP audit.
 
 ### Step 12
 
 - Status: complete.
 - Validation:
-  - `npm run verify`
-  - `npm pack --dry-run`
-  - `npm exec -- ritual --bogus` confirmed the built local executable starts and rejects unsupported flags without scanning real history.
+  - `bun run verify`
+  - `bun run pack:dry-run`
+  - `bun dist/cli/main.js --bogus` confirmed the built local executable starts and rejects unsupported flags without scanning real history.
   - `node --input-type=module -e "import { nodeCommandRunner } from './dist/system/exec.js'; ..."` confirmed local command discovery works without shell warnings.
 - Commit: pending.
 - Next step: release review, tag, and publish when ready.

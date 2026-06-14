@@ -24,7 +24,7 @@ Existing history tools help users inspect what happened. Existing skill generato
 
 ## Product Principles
 
-- The interface has one command: `npx ritual@latest`.
+- The interface has one command: `bunx ritual@latest`.
 - There are no MVP subcommands.
 - There are no MVP CLI flags.
 - All decisions happen through interactive prompts.
@@ -62,7 +62,7 @@ Existing history tools help users inspect what happened. Existing skill generato
 
 ## MVP User Flow
 
-1. The user runs `npx ritual@latest`.
+1. The user runs `bunx ritual@latest`.
 2. Ritual discovers local Claude and Codex history files.
 3. Ritual reports source-level diagnostics, including how many prompts were extracted from each source.
 4. Ritual extracts only user-authored prompts.
@@ -87,7 +87,7 @@ Existing history tools help users inspect what happened. Existing skill generato
 
 ### Invocation
 
-- The MVP command is `npx ritual@latest`.
+- The MVP command is `bunx ritual@latest`.
 - The MVP must not require users to learn subcommands.
 - The MVP must not require users to remember flags.
 - Runtime choices must be made through interactive prompts.
@@ -154,7 +154,7 @@ Existing history tools help users inspect what happened. Existing skill generato
 - Mark candidates as likely global when prompts are tool- or task-generic.
 - Require user confirmation of scope.
 - Default to project-local scope when run inside a repository.
-- Resolve project-local paths relative to the current directory where `npx ritual@latest` was run.
+- Resolve project-local paths relative to the current directory where `bunx ritual@latest` was run.
 
 ### Output Ecosystem Selection
 
@@ -258,7 +258,7 @@ Warnings:
 - The user can review and edit the generated draft before writing.
 - A generated skill passes structural validation.
 - The output path matches the selected scope and ecosystem targets.
-- The CLI can be used successfully with only `npx ritual@latest`.
+- The CLI can be used successfully with only `bunx ritual@latest`.
 
 ## MVP Acceptance Criteria
 

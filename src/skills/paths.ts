@@ -58,7 +58,7 @@ export function recommendScope(candidate: WorkflowCandidate, cwd: string): Skill
     "test/",
     "repo",
     "repository",
-    "npm run",
+    "bun run",
     "bun",
     "pytest",
     "vitest",

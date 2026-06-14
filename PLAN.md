@@ -4,7 +4,7 @@
 - Paths:
   - `/Users/alexmetelli/source/ritual/docs/PRD.md`
   - `/Users/alexmetelli/source/ritual/docs/TECH_SPEC.md`
-- Summary: Build Ritual, a production-grade TypeScript npm CLI invoked as `npx ritual@latest`, that scans local Claude and Codex user prompt history, finds repeated workflow candidates, guides one approved candidate through interactive review, drafts a reusable `SKILL.md` with a local agent executable, validates it, and writes it to selected Claude and/or Codex/agents skill targets.
+- Summary: Build Ritual, a production-grade TypeScript CLI published to the npm registry and invoked as `bunx ritual@latest`, that scans local Claude and Codex user prompt history, finds repeated workflow candidates, guides one approved candidate through interactive review, drafts a reusable `SKILL.md` with a local agent executable, validates it, and writes it to selected Claude and/or Codex/agents skill targets.
 
 ## Goals
 - Provide one interactive command with no MVP subcommands or flags.
@@ -15,7 +15,7 @@
 - Invoke `claude` or `codex exec` only after explicit user approval.
 - Write drafts under `.ritual/drafts/<skill-name>/SKILL.md`, support user editing, validate the draft, and block final writes on structural errors.
 - Write the same approved `SKILL.md` to all selected targets with overwrite protection and clear final path output.
-- Ship with strict TypeScript, Biome, Vitest, build verification, CI, release automation, and npm packaging checks.
+- Ship with strict TypeScript, Biome, Vitest, build verification, CI, release automation, and Bun packaging checks.
 
 ## Non-Goals
 - Automatic skill generation without user review.
@@ -29,10 +29,10 @@
 
 ## Assumptions and Open Questions
 - Assumption: The repository is intentionally pre-implementation; only `README.md` is tracked, while `CHANGELOG.md`, `docs/PRD.md`, and `docs/TECH_SPEC.md` are currently untracked. Implementation steps should preserve these user-authored files.
-- Assumption: The package manager will be npm because the technical specification requires `npx`, `npm ci`, and `npm run verify`.
+- Assumption: The package manager will be Bun because the technical specification requires `bunx`, `bun install --frozen-lockfile`, and `bun run verify`.
 - Assumption: Biome is the formatter and linter; ESLint and Prettier should not be introduced.
 - Assumption: Vitest is the test runner and TypeScript is compiled with strict ESM settings.
-- Assumption: Interactive prompts can use a small npm prompt library, with `@inquirer/prompts` as the initial candidate unless Step 2 finds a better fit.
+- Assumption: Interactive prompts can use a small prompt library, with `@inquirer/prompts` as the initial candidate unless Step 2 finds a better fit.
 - Open question: Which active Node.js LTS major should be the minimum runtime? Impact: affects `package.json` `engines.node`, CI matrix, and published package compatibility.
 - Open question: Which Claude and Codex history formats are supported first? Impact: affects parser fixtures and discovery order.
 - Open question: Which lexical similarity algorithm and thresholds are acceptable for MVP clustering? Impact: affects ranking quality and user trust.
@@ -43,15 +43,15 @@
 
 ## Quality Gates
 - Setup status: Setup required. No `package.json`, lockfile, Biome config, TypeScript config, Vitest config, source tree, test tree, or CI workflow exists yet.
-- Baseline command: `npm run verify` after Step 1 creates the npm project and aggregate script. Before Step 1 this command is expected to be unavailable.
-- Format command: `npm run check`
-- Lint command: `npm run check`
-- Test command: `npm run test`
+- Baseline command: `bun run verify` after Step 1 creates the Bun project and aggregate script. Before Step 1 this command is expected to be unavailable.
+- Format command: `bun run check`
+- Lint command: `bun run check`
+- Test command: `bun run test`
 - Additional gates:
-  - Typecheck: `npm run typecheck`
-  - Build: `npm run build`
-  - Aggregate verification: `npm run verify`
-  - Package audit before release work: `npm pack --dry-run`
+  - Typecheck: `bun run typecheck`
+  - Build: `bun run build`
+  - Aggregate verification: `bun run verify`
+  - Package audit before release work: `bun pm pack --dry-run`
 
 ## Progress Tracking
 - File: `PROGRESS.md`
@@ -86,7 +86,7 @@ Commit:
 - `docs: add implementation progress tracking`
 
 ### Step 1: Quality Gates Setup
-Goal: Bootstrap the TypeScript npm project and make the required quality gates runnable before product implementation starts.
+Goal: Bootstrap the TypeScript Bun project and make the required quality gates runnable before product implementation starts.
 
 Depends on:
 - Step 0
@@ -96,31 +96,31 @@ Changes:
   - `type: "module"`
   - `bin.ritual` pointing at the compiled CLI entrypoint.
   - scripts: `check`, `typecheck`, `test`, `build`, `verify`.
-  - package metadata needed for npm distribution.
-- Add `package-lock.json` through `npm install` after choosing exact dependencies.
+  - package metadata needed for npm registry distribution.
+- Add `bun.lock` through `bun install` after choosing exact dependencies.
 - Add strict `tsconfig.json` with all options required by `docs/TECH_SPEC.md`.
 - Add `tsconfig.build.json` that emits production JavaScript and source maps.
 - Add `biome.json` configured for formatting, linting, import organization, and no unsafe suppressions without a reason.
 - Add `vitest.config.ts`.
 - Add minimal source files required for gates to pass, likely `src/index.ts` and `src/cli/main.ts`.
 - Add a minimal smoke test under `test/unit/`.
-- Add `.gitignore` entries for `node_modules/`, `dist/`, coverage output, npm package artifacts, and `.ritual/` runtime drafts/sessions if appropriate.
-- Add `.github/workflows/ci.yml` that runs `npm ci` and `npm run verify` on pull requests and default-branch pushes.
+- Add `.gitignore` entries for `node_modules/`, `dist/`, coverage output, Bun package artifacts, and `.ritual/` runtime drafts/sessions if appropriate.
+- Add `.github/workflows/ci.yml` that runs `bun install --frozen-lockfile` and `bun run verify` on pull requests and default-branch pushes.
 - Update `README.md` with basic development commands only if needed to document the newly introduced gates.
 
 Acceptance criteria:
-- A clean checkout can run `npm ci`.
-- `npm run verify` fails on formatting, lint, type, test, or build errors.
+- A clean checkout can run `bun install --frozen-lockfile`.
+- `bun run verify` fails on formatting, lint, type, test, or build errors.
 - CI uses the same aggregate gate as local development.
 - The scaffold does not implement product behavior beyond a harmless CLI placeholder.
 
 Validation:
-- Run `npm ci`
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
+- Run `bun install --frozen-lockfile`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and Step 2 as next.
@@ -142,7 +142,7 @@ Changes:
 - Ensure the CLI has no MVP subcommands or flags.
 - Wire a placeholder sequence matching the required application flow so later steps can fill in real modules.
 - Add tests that verify the CLI starts the interactive controller and does not expose subcommands or flags.
-- Update `README.md` with `npx ritual@latest` and local development invocation once the entrypoint exists.
+- Update `README.md` with `bunx ritual@latest` and local development invocation once the entrypoint exists.
 
 Acceptance criteria:
 - The compiled package exposes a `ritual` executable.
@@ -151,11 +151,11 @@ Acceptance criteria:
 - Side effects are behind injectable wrappers where tests need control.
 
 Validation:
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and Step 3 as next.
@@ -191,11 +191,11 @@ Acceptance criteria:
 - Extracted prompts preserve original text and source metadata.
 
 Validation:
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and Step 4 as next.
@@ -225,11 +225,11 @@ Acceptance criteria:
 - One-off, vague, or low-signal prompts are deprioritized.
 
 Validation:
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and Step 5 as next.
@@ -265,11 +265,11 @@ Acceptance criteria:
 - Review logic is testable without real terminal input.
 
 Validation:
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and Step 6 as next.
@@ -304,11 +304,11 @@ Acceptance criteria:
 - Unsafe skill names cannot escape the intended skill root.
 
 Validation:
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and Step 7 as next.
@@ -343,11 +343,11 @@ Acceptance criteria:
 - Missing `claude`/`codex` produces a clear recoverable error.
 
 Validation:
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and Step 8 as next.
@@ -389,11 +389,11 @@ Acceptance criteria:
 - Built-in validation works when `agnix` is not installed.
 
 Validation:
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and Step 9 as next.
@@ -427,11 +427,11 @@ Acceptance criteria:
 - Draft workspace retention or deletion follows the user's choice.
 
 Validation:
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and Step 10 as next.
@@ -473,11 +473,11 @@ Acceptance criteria:
 - Failure and sparse-result paths are covered.
 
 Validation:
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and Step 11 as next.
@@ -485,8 +485,8 @@ Progress:
 Commit:
 - `test: cover ritual end-to-end session flow`
 
-### Step 11: Release And npm Publishing Automation
-Goal: Add tag-driven release automation and package verification for npm distribution.
+### Step 11: Release And npm Registry Publishing Automation
+Goal: Add tag-driven release automation and package verification for npm registry distribution.
 
 Depends on:
 - Step 0
@@ -496,13 +496,13 @@ Depends on:
 Changes:
 - Add or update `.github/workflows/release.yml` to:
   - trigger only on `push` tags matching `v*`.
-  - run `npm ci`.
-  - run `npm run verify`.
+  - run `bun install --frozen-lockfile`.
+  - run `bun run verify`.
   - build the package.
-  - publish to npm.
+  - publish to the npm registry with `bun publish`.
   - create or update a GitHub Release.
-- Prefer npm trusted publishing with provenance when available.
-- Use least-privilege workflow permissions, including `id-token: write` only when trusted publishing/provenance is configured and `contents: write` only for GitHub Release creation.
+- Use `NPM_TOKEN` for initial Bun-based publishing unless trusted publishing support is added later.
+- Use least-privilege workflow permissions, including `contents: write` for GitHub Release creation and no `id-token: write` unless trusted publishing/provenance is configured later.
 - Add package publication metadata, `files`, source maps, and any required npm ignore/package include settings.
 - Add a package dry-run check to release documentation or scripts if useful.
 - Update `CHANGELOG.md` for release-process additions.
@@ -510,22 +510,22 @@ Changes:
 Acceptance criteria:
 - Ordinary branch pushes do not publish.
 - `v*` tags run the release gate before publishing.
-- Local and CI release gates use `npm run verify`.
-- `npm pack --dry-run` includes compiled JavaScript, source maps, and required runtime assets only.
+- Local and CI release gates use `bun run verify`.
+- `bun pm pack --dry-run` includes compiled JavaScript, source maps, and required runtime assets only.
 
 Validation:
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
-- Run `npm pack --dry-run`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
+- Run `bun pm pack --dry-run`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and Step 12 as next.
 
 Commit:
-- `ci: add npm release automation`
+- `ci: add Bun release automation`
 
 ### Step 12: Production Readiness Documentation And Final MVP Audit
 Goal: Align documentation with implemented behavior and verify the MVP is ready for first release review.
@@ -537,7 +537,7 @@ Depends on:
 
 Changes:
 - Update `README.md` with:
-  - `npx ritual@latest` usage.
+  - `bunx ritual@latest` usage.
   - local development commands.
   - privacy expectations.
   - supported history sources.
@@ -555,12 +555,12 @@ Acceptance criteria:
 - All open questions that were resolved during implementation are reflected in docs or tracked as future work.
 
 Validation:
-- Run `npm run check`
-- Run `npm run typecheck`
-- Run `npm run test`
-- Run `npm run build`
-- Run `npm run verify`
-- Run `npm pack --dry-run`
+- Run `bun run check`
+- Run `bun run typecheck`
+- Run `bun run test`
+- Run `bun run build`
+- Run `bun run verify`
+- Run `bun pm pack --dry-run`
 
 Progress:
 - Update `PROGRESS.md` with completion notes, validation results, commit reference if available, current status, and the plan status as complete or awaiting release.

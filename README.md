@@ -9,14 +9,14 @@ a reusable `SKILL.md`.
 Published usage:
 
 ```bash
-npx ritual@latest
+bunx ritual@latest
 ```
 
 Local development usage:
 
 ```bash
-npm ci
-npm run build
+bun install --frozen-lockfile
+bun run build
 node dist/cli/main.js
 ```
 
@@ -75,16 +75,16 @@ Existing skill files are never overwritten without interactive confirmation.
 ## Development
 
 ```bash
-npm ci
-npm run check
-npm run typecheck
-npm run test
-npm run build
-npm run verify
-npm pack --dry-run
+bun install --frozen-lockfile
+bun run check
+bun run typecheck
+bun run test
+bun run build
+bun run verify
+bun run pack:dry-run
 ```
 
-`npm run verify` is the aggregate local and CI gate.
+`bun run verify` is the aggregate local and CI gate.
 
 ## Troubleshooting
 
@@ -100,5 +100,6 @@ npm pack --dry-run
 ## Release
 
 Release automation runs on `v*` tag pushes. The release workflow installs with
-`npm ci`, runs `npm run verify`, audits package contents with `npm pack --dry-run`,
-publishes with npm provenance, and creates a GitHub Release.
+`bun install --frozen-lockfile`, runs `bun run verify`, audits package contents with
+`bun run pack:dry-run`, publishes to the npm registry with `bun publish`, and creates
+a GitHub Release.

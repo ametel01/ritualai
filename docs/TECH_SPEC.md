@@ -5,7 +5,7 @@
 Ritual is a production-grade TypeScript CLI distributed through the npm registry and executed with:
 
 ```bash
-npx ritual@latest
+bunx ritual@latest
 ```
 
 The application has one interactive command, no MVP subcommands, and no MVP flags. Its technical design must support the PRD goal: scan local Claude and Codex history, identify repeated user prompts, guide the user through one approved candidate, draft a high-quality `SKILL.md`, validate it, and write it to selected skill targets.
@@ -16,13 +16,13 @@ The application has one interactive command, no MVP subcommands, and no MVP flag
 - Runtime target: active Node.js LTS.
 - Package format: ESM.
 - Distribution: npm registry.
-- User entrypoint: `npx ritual@latest`.
+- User entrypoint: `bunx ritual@latest`.
 - Package `bin` entry: expose the `ritual` executable.
 - Published artifact: compiled JavaScript and required runtime assets only.
 - Source maps: included for debuggable production failures.
 - Release mechanism: automated GitHub Actions workflow on `v*` tag push.
 
-The CLI must not require a global install. `npx ritual@latest` is the primary supported invocation.
+The CLI must not require a global install. `bunx ritual@latest` is the primary supported invocation.
 
 ## Package Structure
 
@@ -158,7 +158,7 @@ Required package scripts:
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "verify": "npm run check && npm run typecheck && npm run test && npm run build"
+    "verify": "bun run check && bun run typecheck && bun run test && bun run build"
   }
 }
 ```
@@ -166,7 +166,7 @@ Required package scripts:
 Required gate before merge:
 
 ```bash
-npm run verify
+bun run verify
 ```
 
 Quality gates must fail on formatting, lint, type, test, or build errors. CI must use the same commands as local development.
@@ -326,19 +326,19 @@ Requirements:
 
 ## Release And Publishing
 
-Ritual is published to npm and must be runnable with `npx ritual@latest`.
+Ritual is published to npm and must be runnable with `bunx ritual@latest`.
 
 Release requirements:
 
 - Use SemVer.
 - Keep `CHANGELOG.md` as the canonical human-readable release history.
 - Automate publishing through GitHub Actions on `v*` tag push.
-- Run `npm ci`.
-- Run `npm run verify`.
+- Run `bun install --frozen-lockfile`.
+- Run `bun run verify`.
 - Build the package.
-- Publish to npm only after all gates pass.
-- Use npm trusted publishing with provenance when available.
-- Fall back to `NPM_TOKEN` only if trusted publishing is not configured.
+- Publish to the npm registry only after all gates pass.
+- Use `bun publish` with `NPM_TOKEN` for the initial release workflow.
+- Track npm trusted publishing/provenance as a future hardening step if Bun supports the required workflow.
 - Create or update a GitHub Release from the tag.
 
 The release workflow must not publish on ordinary branch pushes.
@@ -352,18 +352,18 @@ Required workflows:
 
 CI workflow gates:
 
-- install dependencies with `npm ci`
-- run `npm run verify`
+- install dependencies with `bun install --frozen-lockfile`
+- run `bun run verify`
 
 Release workflow gates:
 
 - trigger only on `push` tags matching `v*`
-- install dependencies with `npm ci`
-- run `npm run verify`
-- publish to npm
+- install dependencies with `bun install --frozen-lockfile`
+- run `bun run verify`
+- publish to the npm registry with `bun publish`
 - generate GitHub Release notes from `CHANGELOG.md` or tag contents
 
-Workflow permissions should use least privilege. Release publishing should request `id-token: write` only when npm trusted publishing/provenance is used, and `contents: write` only for GitHub Release creation.
+Workflow permissions should use least privilege. Release publishing should use `contents: write` only for GitHub Release creation and should not request `id-token: write` unless trusted publishing/provenance is added later.
 
 ## Production Readiness
 
@@ -376,7 +376,7 @@ Required before first public release:
 - Typecheck enforced locally and in CI.
 - Unit and integration tests for all write paths.
 - Build verified in CI.
-- npm package contents audited with `npm pack --dry-run`.
+- Bun package contents audited with `bun pm pack --dry-run`.
 - No real history files used in tests.
 - Clear errors for missing Claude, Codex, editor, or drafting executables.
 - Clear diagnostics for unsupported history formats.
@@ -389,4 +389,4 @@ Required before first public release:
 - Which prompt library should own interactive UI rendering?
 - Should local clustering use a hand-rolled lexical algorithm or a small dependency?
 - Should release notes be generated directly from `CHANGELOG.md` sections or maintained separately in GitHub Releases?
-- Should npm trusted publishing be required for the first release, or allowed as a post-MVP hardening step?
+- Should npm trusted publishing be added after Bun supports the required provenance workflow?
