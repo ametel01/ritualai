@@ -71,6 +71,33 @@ export function parseRecords(
 
 export function promptFromRecord(record: unknown): PromptCandidate | undefined {
   if (!isRecord(record) || !isUserRecord(record)) {
+    const wrapper = isRecord(record) ? record : undefined;
+    const payload = wrapper === undefined ? undefined : firstKnownValue(wrapper, ["payload"]);
+    if (!isRecord(payload)) {
+      return undefined;
+    }
+    const candidate = promptFromRecord(payload);
+    if (candidate === undefined) {
+      return undefined;
+    }
+    if (wrapper === undefined) {
+      return candidate;
+    }
+    const sessionId =
+      candidate.sessionId ??
+      stringValue(firstKnownValue(wrapper, ["sessionId", "session_id", "conversation_id", "id"]));
+    const createdAt =
+      candidate.createdAt ??
+      stringValue(firstKnownValue(wrapper, ["createdAt", "created_at", "timestamp", "time"]));
+
+    return {
+      text: candidate.text,
+      ...(sessionId === undefined ? {} : { sessionId }),
+      ...(createdAt === undefined ? {} : { createdAt }),
+    };
+  }
+
+  if (!isRecord(record)) {
     return undefined;
   }
 
@@ -154,7 +181,7 @@ function contentToText(value: unknown): string | undefined {
 
 function contentPartToText(value: unknown): string | undefined {
   if (typeof value === "string") {
-    return value;
+    return isInjectedContextText(value) ? undefined : value;
   }
   if (!isRecord(value)) {
     return undefined;
@@ -163,7 +190,25 @@ function contentPartToText(value: unknown): string | undefined {
   if (type !== undefined && !["text", "input_text", "user"].includes(type.toLowerCase())) {
     return undefined;
   }
-  return stringValue(firstKnownValue(value, ["text", "content", "input"]));
+  const text = stringValue(firstKnownValue(value, ["text", "content", "input"]));
+  if (text === undefined || isInjectedContextText(text)) {
+    return undefined;
+  }
+  return text;
+}
+
+function isInjectedContextText(text: string): boolean {
+  const trimmed = text.trimStart();
+  return (
+    trimmed.startsWith("<codex_internal_context") ||
+    trimmed.startsWith("<environment_context") ||
+    trimmed.startsWith("<permissions instructions>") ||
+    trimmed.startsWith("<collaboration_mode>") ||
+    trimmed.startsWith("<apps_instructions>") ||
+    trimmed.startsWith("<skills_instructions>") ||
+    trimmed.startsWith("<plugins_instructions>") ||
+    trimmed.startsWith("# AGENTS.md instructions for ")
+  );
 }
 
 function firstKnownValue(record: Record<string, unknown>, keys: string[]): unknown {
