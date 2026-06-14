@@ -6,7 +6,7 @@ Plan source:
 - `docs/PRD.md`
 - `docs/TECH_SPEC.md`
 
-Current status: Step 6 complete; implementation commits in progress.
+Current status: Step 7 complete; implementation commits in progress.
 
 Update rule: after each completed plan step, update this file with the completed step,
 validation results, commit reference when available, current status, and the next step.
@@ -20,7 +20,7 @@ validation results, commit reference when available, current status, and the nex
 - [x] Step 4: Prompt Normalization, Clustering, And Ranking
 - [x] Step 5: Candidate Review Interaction
 - [x] Step 6: Scope Recommendation And Target Path Resolution
-- [ ] Step 7: Embedded Generation Template And Agent Invocation
+- [x] Step 7: Embedded Generation Template And Agent Invocation
 - [ ] Step 8: Draft Workspace, Editor, And Validation
 - [ ] Step 9: Final Skill Writes And Draft Cleanup
 - [ ] Step 10: End-To-End Interactive Session Coverage
@@ -75,5 +75,12 @@ validation results, commit reference when available, current status, and the nex
 
 - Status: complete.
 - Validation: skill-name sanitization, project/global Claude and Codex/agents path resolution, scope recommendation, path traversal prevention, and existing-skill detection added.
-- Commit: pending.
+- Commit: `9449a9f feat: resolve safe skill target paths`.
 - Next step: Step 7, embedded generation template and agent invocation.
+
+### Step 7
+
+- Status: complete.
+- Validation: versioned embedded generation prompt, supported executable detection, command construction, approval-gated drafting, and command runner abstraction added.
+- Commit: pending.
+- Next step: Step 8, draft workspace, editor, and validation.
