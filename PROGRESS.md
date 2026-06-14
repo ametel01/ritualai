@@ -6,7 +6,7 @@ Plan source:
 - `docs/PRD.md`
 - `docs/TECH_SPEC.md`
 
-Current status: Step 2 complete; implementation commits in progress.
+Current status: Step 3 complete; implementation commits in progress.
 
 Update rule: after each completed plan step, update this file with the completed step,
 validation results, commit reference when available, current status, and the next step.
@@ -16,7 +16,7 @@ validation results, commit reference when available, current status, and the nex
 - [x] Step 0: Progress Tracking Setup
 - [x] Step 1: Quality Gates Setup
 - [x] Step 2: CLI Entry Flow Skeleton
-- [ ] Step 3: History Discovery And Prompt Extraction
+- [x] Step 3: History Discovery And Prompt Extraction
 - [ ] Step 4: Prompt Normalization, Clustering, And Ranking
 - [ ] Step 5: Candidate Review Interaction
 - [ ] Step 6: Scope Recommendation And Target Path Resolution
@@ -47,5 +47,12 @@ validation results, commit reference when available, current status, and the nex
 
 - Status: complete.
 - Validation: executable entrypoint, prompt adapter, and interactive controller added.
-- Commit: pending.
+- Commit: `4f5bf35 feat: add interactive cli shell`.
 - Next step: Step 3, history discovery and prompt extraction.
+
+### Step 3
+
+- Status: complete.
+- Validation: Claude and Codex JSON/JSONL parsers, discovery, source diagnostics, and local-only telemetry formatting added.
+- Commit: pending.
+- Next step: Step 4, prompt normalization, clustering, and ranking.
