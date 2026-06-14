@@ -6,7 +6,7 @@ Plan source:
 - `docs/PRD.md`
 - `docs/TECH_SPEC.md`
 
-Current status: Step 3 complete; implementation commits in progress.
+Current status: Step 4 complete; implementation commits in progress.
 
 Update rule: after each completed plan step, update this file with the completed step,
 validation results, commit reference when available, current status, and the next step.
@@ -17,7 +17,7 @@ validation results, commit reference when available, current status, and the nex
 - [x] Step 1: Quality Gates Setup
 - [x] Step 2: CLI Entry Flow Skeleton
 - [x] Step 3: History Discovery And Prompt Extraction
-- [ ] Step 4: Prompt Normalization, Clustering, And Ranking
+- [x] Step 4: Prompt Normalization, Clustering, And Ranking
 - [ ] Step 5: Candidate Review Interaction
 - [ ] Step 6: Scope Recommendation And Target Path Resolution
 - [ ] Step 7: Embedded Generation Template And Agent Invocation
@@ -54,5 +54,12 @@ validation results, commit reference when available, current status, and the nex
 
 - Status: complete.
 - Validation: Claude and Codex JSON/JSONL parsers, discovery, source diagnostics, and local-only telemetry formatting added.
-- Commit: pending.
+- Commit: `cffc5d1 feat: extract prompts from local agent history`.
 - Next step: Step 4, prompt normalization, clustering, and ranking.
+
+### Step 4
+
+- Status: complete.
+- Validation: prompt normalization, lexical similarity clustering, recurrence thresholds, ranking reasons, and candidate types added.
+- Commit: pending.
+- Next step: Step 5, candidate review interaction.
