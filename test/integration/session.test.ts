@@ -101,7 +101,7 @@ describe("interactive session", () => {
     const prompts = new QueuePrompts({
       confirms: [true, true, true, true],
       inputs: [fixturePath, "pr-review-workflow"],
-      selects: ["codex", "candidate-1", "approve", "project"],
+      selects: ["codex", "candidate-1", "project", "claude"],
       checkboxes: [["claude", "codex"]],
     });
 
@@ -123,6 +123,7 @@ describe("interactive session", () => {
     const codexPath = path.join(cwd, ".agents", "skills", "pr-review-workflow", "SKILL.md");
     await expect(readFile(claudePath, "utf8")).resolves.toContain("name: pr-review-workflow");
     await expect(readFile(codexPath, "utf8")).resolves.toContain("name: pr-review-workflow");
-    expect(outputs.some((line) => line.includes("user prompts extracted"))).toBe(true);
+    expect(outputs.some((line) => line.includes("found 3 user prompts"))).toBe(true);
+    expect(outputs.some((line) => line.includes("Matching prompts found locally"))).toBe(true);
   });
 });

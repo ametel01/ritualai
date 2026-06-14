@@ -2,7 +2,6 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { discoverHistorySources, scanHistorySources } from "../history/discover.js";
 import type { HistorySource } from "../history/types.js";
-import { mergeCandidates } from "../prompts/cluster.js";
 import { nearMissCandidates, rankWorkflowCandidates, strongCandidates } from "../prompts/rank.js";
 import type { WorkflowCandidate } from "../prompts/types.js";
 import {
@@ -10,7 +9,7 @@ import {
   candidateLooksTooVague,
   createSkillDraft,
   type DraftExecutable,
-  detectDraftExecutable,
+  detectDraftExecutables,
   writeDraftWorkspace,
 } from "../skills/draft.js";
 import {
@@ -124,7 +123,7 @@ export async function runInteractiveSession(
     }
   }
 
-  const executable = await detectDraftExecutable(runner);
+  const executable = await chooseDraftExecutable(prompts, runner);
   if (executable === undefined) {
     return {
       status: "cancelled",
@@ -208,10 +207,10 @@ async function reviewCandidates(
   let pool = strongCandidates(candidates);
   if (pool.length === 0) {
     const nearMisses = nearMissCandidates(candidates);
-    output.write("No strong candidates met the default recurrence threshold.");
+    output.write("Ritual did not find any workflows repeated three or more times.");
     if (
       nearMisses.length === 0 ||
-      !(await prompts.confirm("Review near-miss candidates with two similar prompts?", false))
+      !(await prompts.confirm("Review workflows that appeared twice?", false))
     ) {
       return undefined;
     }
@@ -219,11 +218,11 @@ async function reviewCandidates(
   }
 
   while (pool.length > 0) {
-    const choice = await prompts.select("Review candidate", [
+    const choice = await prompts.select("Choose a repeated workflow", [
       ...pool.map((candidate) => ({
-        name: `${candidate.name} (${candidate.count})`,
+        name: candidateMenuLabel(candidate),
         value: candidate.id,
-        description: candidate.rankReason,
+        description: candidateMenuDescription(candidate),
       })),
       { name: "Exit without generating", value: "exit" },
     ]);
@@ -236,68 +235,60 @@ async function reviewCandidates(
     }
 
     showCandidate(output, selected);
-    const action = await prompts.select("Candidate action", [
-      { name: "Approve", value: "approve" },
-      { name: "Rename", value: "rename" },
-      { name: "Merge", value: "merge" },
-      { name: "Reject", value: "reject" },
-      { name: "Back", value: "back" },
-    ]);
-
-    if (action === "approve") {
-      return selected;
-    }
-    if (action === "rename") {
-      const name = await prompts.input("Candidate name", selected.name);
-      selected.name = sanitizeSkillName(name);
-      continue;
-    }
-    if (action === "merge") {
-      const other = await chooseMergeCandidate(prompts, pool, selected);
-      if (other !== undefined) {
-        pool = pool.filter(
-          (candidate) => candidate.id !== selected.id && candidate.id !== other.id,
-        );
-        pool.unshift(mergeCandidates(selected, other));
-      }
-      continue;
-    }
-    if (action === "reject") {
-      pool = pool.filter((candidate) => candidate.id !== selected.id);
-    }
+    return selected;
   }
 
   return undefined;
 }
 
 function showCandidate(output: Output, candidate: WorkflowCandidate): void {
-  output.write(`Name: ${candidate.name}`);
-  output.write(`Count: ${candidate.count}`);
-  output.write(`Summary: ${candidate.summary}`);
-  output.write(`Rank: ${candidate.rankReason}`);
-  output.write("Representative prompts:");
+  output.write(`Suggested skill name: ${candidate.name}`);
+  output.write(`Found ${candidate.count} similar prompt${candidate.count === 1 ? "" : "s"}.`);
+  output.write(`What it looks like: ${candidate.summary}`);
+  output.write(`Confidence: ${candidate.isStrong ? "good" : "possible"}`);
+  output.write("Matching prompts found locally:");
   for (const prompt of candidate.representativePrompts) {
     output.write(`- ${prompt.text}`);
   }
+  output.write("Next, Ritual will draft a skill from this workflow using your local agent.");
 }
 
-async function chooseMergeCandidate(
+function candidateMenuLabel(candidate: WorkflowCandidate): string {
+  const label =
+    candidate.summary.length <= 76 ? candidate.summary : `${candidate.summary.slice(0, 73)}...`;
+  return `${label} (${candidate.count} prompt${candidate.count === 1 ? "" : "s"})`;
+}
+
+function candidateMenuDescription(candidate: WorkflowCandidate): string {
+  return candidate.isStrong
+    ? "Ritual saw this pattern several times."
+    : "Ritual saw this pattern twice.";
+}
+
+async function chooseDraftExecutable(
   prompts: PromptAdapter,
-  candidates: WorkflowCandidate[],
-  selected: WorkflowCandidate,
-): Promise<WorkflowCandidate | undefined> {
-  const mergeable = candidates.filter((candidate) => candidate.id !== selected.id);
-  if (mergeable.length === 0) {
+  runner: CommandRunner,
+): Promise<DraftExecutable | undefined> {
+  const availableExecutables = await detectDraftExecutables(runner);
+  if (availableExecutables.length === 0) {
     return undefined;
   }
-  const choice = await prompts.select("Merge with", [
-    ...mergeable.map((candidate) => ({
-      name: `${candidate.name} (${candidate.count})`,
-      value: candidate.id,
+
+  return prompts.select<DraftExecutable>("Generate the draft with", [
+    ...availableExecutables.map((executable) => ({
+      name: draftExecutableLabel(executable),
+      value: executable,
+      description: `Run ${draftExecutableCommand(executable)} locally with the skill-generation prompt`,
     })),
-    { name: "Cancel merge", value: "cancel" },
   ]);
-  return choice === "cancel" ? undefined : mergeable.find((candidate) => candidate.id === choice);
+}
+
+function draftExecutableLabel(executable: DraftExecutable): string {
+  return executable === "claude" ? "Claude Code" : "Codex";
+}
+
+function draftExecutableCommand(executable: DraftExecutable): string {
+  return executable === "claude" ? "claude -p" : "codex exec";
 }
 
 async function confirmRiskyTargets(

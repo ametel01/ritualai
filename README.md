@@ -27,13 +27,14 @@ The MVP has one interactive command. It does not expose subcommands or flags.
 1. Discovers supported Claude and Codex history files.
 2. Extracts user-authored prompts only.
 3. Normalizes, clusters, and ranks repeated workflow candidates locally.
-4. Lets the user inspect, reject, rename, merge, or approve one candidate.
+4. Lets the user choose one repeated workflow and preview matching local prompts.
 5. Recommends project-local or global skill scope.
 6. Lets the user choose Claude, Codex/agents, or both output ecosystems.
-7. Shows and confirms the local agent invocation before drafting.
-8. Writes an editable draft to `.ritual/drafts/<skill-name>/SKILL.md`.
-9. Validates the draft with built-in checks and optional `agnix`.
-10. Writes the same approved `SKILL.md` to all selected targets.
+7. Lets the user choose Claude Code or Codex for local draft generation.
+8. Shows and confirms the local agent invocation before drafting.
+9. Writes an editable draft to `.ritual/drafts/<skill-name>/SKILL.md`.
+10. Validates the draft with built-in checks and optional `agnix`.
+11. Writes the same approved `SKILL.md` to all selected targets.
 
 ## Privacy
 

@@ -43,7 +43,7 @@ export function clusterPrompts(
         count,
         coherence,
         rankScore,
-        rankReason: `${count} similar prompts, ${Math.round(coherence * 100)}% lexical coherence, ${isStrong ? "strong recurrence" : "near-miss recurrence"}.`,
+        rankReason: `${count} similar prompt${count === 1 ? "" : "s"} found; ${isStrong ? "good skill candidate" : "possible skill candidate"}.`,
         isStrong,
       };
     })
@@ -113,6 +113,9 @@ function averageDetailScore(prompts: ExtractedPrompt[]): number {
 function candidateName(tokens: string[]): string {
   const counts = new Map<string, number>();
   for (const token of tokens) {
+    if (isNoisyNameToken(token)) {
+      continue;
+    }
     counts.set(token, (counts.get(token) ?? 0) + 1);
   }
   const selected = [...counts.entries()]
@@ -121,6 +124,27 @@ function candidateName(tokens: string[]): string {
     .map(([token]) => token.replace(/[^a-z0-9-]/g, ""))
     .filter((token) => token.length > 0);
   return selected.length === 0 ? "repeated-workflow" : selected.join("-");
+}
+
+function isNoisyNameToken(token: string): boolean {
+  if (token.length > 32) {
+    return true;
+  }
+  if (token.includes("/") || token.includes("\\") || token.includes(".")) {
+    return true;
+  }
+  return [
+    "file",
+    "files",
+    "image",
+    "jpeg",
+    "jpg",
+    "png",
+    "source",
+    "tmp",
+    "user",
+    "users",
+  ].includes(token);
 }
 
 function summaryFromPrompt(prompt: string): string {

@@ -14,17 +14,17 @@ export type DraftRequest = {
   ecosystems: SkillEcosystem[];
 };
 
-export async function detectDraftExecutable(
-  runner: CommandRunner,
-): Promise<DraftExecutable | undefined> {
-  if ((await runner.which("claude")) !== undefined) {
-    return "claude";
+export async function detectDraftExecutables(runner: CommandRunner): Promise<DraftExecutable[]> {
+  const executables: DraftExecutable[] = [];
+  for (const executable of DRAFT_EXECUTABLES) {
+    if ((await runner.which(executable)) !== undefined) {
+      executables.push(executable);
+    }
   }
-  if ((await runner.which("codex")) !== undefined) {
-    return "codex";
-  }
-  return undefined;
+  return executables;
 }
+
+export const DRAFT_EXECUTABLES: readonly DraftExecutable[] = ["claude", "codex"];
 
 export function buildDraftInvocation(
   executable: DraftExecutable,

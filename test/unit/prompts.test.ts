@@ -19,7 +19,7 @@ describe("prompt ranking", () => {
     expect(candidates[0]?.isStrong).toBe(true);
     expect(candidates[0]?.count).toBe(3);
     expect(candidates[0]?.representativePrompts[0]?.text).toBe(prompts[0]?.text);
-    expect(candidates[0]?.rankReason).toContain("strong recurrence");
+    expect(candidates[0]?.rankReason).toContain("good skill candidate");
   });
 
   it("exposes two-prompt near misses without marking them strong", () => {
@@ -32,5 +32,17 @@ describe("prompt ranking", () => {
 
     expect(candidates).toHaveLength(1);
     expect(candidates[0]?.isStrong).toBe(false);
+  });
+
+  it("does not build candidate names from attachment and path noise", () => {
+    const prompts = [
+      prompt("1", "image source png usersalexmetellisourcescopepilotmarketingchatgpt"),
+      prompt("2", "image source png usersalexmetellisourcescopepilotmarketingchatgpt"),
+      prompt("3", "image source png usersalexmetellisourcescopepilotmarketingchatgpt"),
+    ];
+
+    const candidates = rankWorkflowCandidates(prompts);
+
+    expect(candidates[0]?.name).toBe("repeated-workflow");
   });
 });

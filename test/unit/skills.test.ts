@@ -1,8 +1,10 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
+import { detectDraftExecutables } from "../../src/skills/draft.js";
 import { resolveSkillTargets, sanitizeSkillName } from "../../src/skills/paths.js";
 import { validateSkillDraft } from "../../src/skills/validate.js";
+import type { CommandInvocation, CommandResult, CommandRunner } from "../../src/system/exec.js";
 import { nodeFileSystem } from "../../src/system/filesystem.js";
 
 describe("skill paths", () => {
@@ -24,6 +26,23 @@ describe("skill paths", () => {
       path.join(".claude", "skills", "review-pr", "SKILL.md"),
       path.join(".agents", "skills", "review-pr", "SKILL.md"),
     ]);
+  });
+});
+
+describe("skill draft executables", () => {
+  it("detects available local generation agents in stable menu order", async () => {
+    const runner: CommandRunner = {
+      async which(command: string): Promise<string | undefined> {
+        return command === "claude" || command === "codex"
+          ? `/usr/local/bin/${command}`
+          : undefined;
+      },
+      async run(_invocation: CommandInvocation): Promise<CommandResult> {
+        throw new Error("not used");
+      },
+    };
+
+    await expect(detectDraftExecutables(runner)).resolves.toEqual(["claude", "codex"]);
   });
 });
 
