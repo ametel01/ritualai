@@ -18,3 +18,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Draft workspace creation, optional `$EDITOR` review, built-in `SKILL.md` validation with optional `agnix`, final writes, and draft cleanup choice.
 - Unit and integration tests covering parsers, ranking, path safety, validation, and the full fixture-driven session flow.
 - GitHub Actions CI and tag-driven Bun release workflow.
+
+### Changed
+
+- Switched the project package manager from npm to Bun, replacing `package-lock.json` with `bun.lock` and updating local, CI, and release commands to use `bun`.
+
+### Fixed
+
+- Parse real Codex session `response_item.payload` records so user-authored prompts are extracted from `~/.codex/sessions`.
+- Ignore injected Codex context blocks such as environment metadata, app/plugin instructions, skill instructions, and `AGENTS.md` context when extracting user prompts.
