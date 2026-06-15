@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Move directly from choosing a repeated workflow into local-agent draft setup instead of showing a second approval menu.
 - Detect available local draft generators and ask the user to choose Claude Code or Codex before creating the `SKILL.md` draft, instead of silently preferring the first executable found.
 - Summarize scanned history sources and repeated diagnostics so users see concise totals instead of a long line-by-line dump for every skipped session file.
+- Cleanly handle terminal prompt cancellation and release stdin after real prompt interactions.
 
 ### Fixed
 

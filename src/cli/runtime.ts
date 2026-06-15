@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { runInteractiveSession, type SessionResult } from "./interactive.js";
+import { isPromptCancelledError } from "./prompts.js";
 
 export type CliOutput = {
   stdout(message: string): void;
@@ -89,6 +90,10 @@ function handleTopLevelError(
   setExitCode: (code: number) => void,
 ): void {
   const message = error instanceof Error ? error.message : "Unknown error.";
+  if (isPromptCancelledError(error)) {
+    output.stdout("Ritual stopped: Cancelled.");
+    return;
+  }
   output.stderr(`Ritual failed: ${message}`);
   setExitCode(1);
 }

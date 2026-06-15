@@ -1,5 +1,6 @@
 import { EventEmitter } from "node:events";
 import type { SessionResult } from "../../src/cli/interactive.js";
+import { PromptCancelledError } from "../../src/cli/prompts.js";
 import { normalizeHelpInvocation, type RuntimeStdin, runCli } from "../../src/cli/runtime.js";
 
 class FakeStdin extends EventEmitter implements RuntimeStdin {
@@ -68,5 +69,23 @@ describe("cli runtime", () => {
 
     expect(stderr).toEqual(["Ritual failed: boom"]);
     expect(exitCodes).toEqual([1]);
+  });
+
+  it("treats terminal prompt cancellation as a clean stop", async () => {
+    const stdout: string[] = [];
+    const exitCodes: number[] = [];
+
+    await runCli({
+      argv: ["node", "ritual"],
+      stdin: new FakeStdin(),
+      output: { stdout: (message) => stdout.push(message), stderr: () => undefined },
+      setExitCode: (code) => exitCodes.push(code),
+      async runInteractive(): Promise<SessionResult> {
+        throw new PromptCancelledError();
+      },
+    });
+
+    expect(stdout).toEqual(["Ritual stopped: Cancelled."]);
+    expect(exitCodes).toEqual([]);
   });
 });

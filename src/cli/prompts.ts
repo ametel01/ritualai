@@ -14,20 +14,47 @@ export type PromptAdapter = {
   checkbox<Value extends string>(message: string, choices: Choice<Value>[]): Promise<Value[]>;
 };
 
+export class PromptCancelledError extends Error {
+  constructor() {
+    super("Cancelled.");
+    this.name = "PromptCancelledError";
+  }
+}
+
 export const inquirerPromptAdapter: PromptAdapter = {
   async confirm(message: string, defaultValue = false): Promise<boolean> {
-    return confirm({ message, default: defaultValue });
+    return runPrompt(() => confirm({ message, default: defaultValue }));
   },
   async input(message: string, defaultValue = ""): Promise<string> {
-    return input({ message, default: defaultValue });
+    return runPrompt(() => input({ message, default: defaultValue }));
   },
   async select<Value extends string>(message: string, choices: Choice<Value>[]): Promise<Value> {
-    return select({ message, choices });
+    return runPrompt(() => select({ message, choices }));
   },
   async checkbox<Value extends string>(
     message: string,
     choices: Choice<Value>[],
   ): Promise<Value[]> {
-    return checkbox({ message, choices });
+    return runPrompt(() => checkbox({ message, choices }));
   },
 };
+
+export function isPromptCancelledError(error: unknown): boolean {
+  return (
+    error instanceof PromptCancelledError ||
+    (error instanceof Error && error.name === "ExitPromptError")
+  );
+}
+
+async function runPrompt<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (isPromptCancelledError(error)) {
+      throw new PromptCancelledError();
+    }
+    throw error;
+  } finally {
+    process.stdin.unref?.();
+  }
+}
