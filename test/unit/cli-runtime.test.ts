@@ -1,7 +1,16 @@
 import { EventEmitter } from "node:events";
+import { mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import * as path from "node:path";
+import { pathToFileURL } from "node:url";
 import type { SessionResult } from "../../src/cli/interactive.js";
 import { PromptCancelledError } from "../../src/cli/prompts.js";
-import { normalizeHelpInvocation, type RuntimeStdin, runCli } from "../../src/cli/runtime.js";
+import {
+  isDirectEntrypoint,
+  normalizeHelpInvocation,
+  type RuntimeStdin,
+  runCli,
+} from "../../src/cli/runtime.js";
 
 class FakeStdin extends EventEmitter implements RuntimeStdin {
   unrefCalls = 0;
@@ -15,6 +24,20 @@ class FakeStdin extends EventEmitter implements RuntimeStdin {
 describe("cli runtime", () => {
   it("normalizes bare help before argument handling", () => {
     expect(normalizeHelpInvocation(["help"])).toEqual(["--help"]);
+  });
+
+  it("detects direct execution through package bin symlinks", async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), "ritual-bin-"));
+    const realEntrypoint = path.join(tempDir, "dist", "cli", "main.js");
+    const binEntrypoint = path.join(tempDir, "node_modules", ".bin", "ritualai");
+    await mkdir(path.dirname(realEntrypoint), { recursive: true });
+    await mkdir(path.dirname(binEntrypoint), { recursive: true });
+    await writeFile(realEntrypoint, "", "utf8");
+    await symlink(realEntrypoint, binEntrypoint);
+
+    expect(isDirectEntrypoint(pathToFileURL(realEntrypoint).href, ["node", binEntrypoint])).toBe(
+      true,
+    );
   });
 
   it("preserves Ritual's one-command, no-flags public contract", async () => {

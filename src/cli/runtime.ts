@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { runInteractiveSession, type SessionResult } from "./interactive.js";
 import { isPromptCancelledError } from "./prompts.js";
@@ -62,7 +63,10 @@ export function normalizeHelpInvocation(args: readonly string[]): string[] {
 
 export function isDirectEntrypoint(importMetaUrl: string, argv = process.argv): boolean {
   const entrypoint = argv[1];
-  return entrypoint !== undefined && fileURLToPath(importMetaUrl) === entrypoint;
+  return (
+    entrypoint !== undefined &&
+    resolveEntrypointPath(fileURLToPath(importMetaUrl)) === resolveEntrypointPath(entrypoint)
+  );
 }
 
 function installGracefulExitHandlers(): void {
@@ -72,6 +76,14 @@ function installGracefulExitHandlers(): void {
   process.once("SIGTERM", () => {
     process.exitCode = 143;
   });
+}
+
+function resolveEntrypointPath(filePath: string): string {
+  try {
+    return realpathSync(filePath);
+  } catch {
+    return filePath;
+  }
 }
 
 function unrefStdin(stdin: RuntimeStdin): void {
