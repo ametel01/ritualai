@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
+- Let the ranking progress spinner animate during repeated-workflow clustering by yielding through the async ranking path.
 - Removed stale draft wording from the direct skill generation flow and made successful progress spinners clear without printing `ok ...` status lines.
 - Avoid Node's unsettled top-level-await warning during interactive prompts by deferring stdin unref cleanup until the CLI session settles.
 - Parse real Codex session `response_item.payload` records so user-authored prompts are extracted from `~/.codex/sessions`.

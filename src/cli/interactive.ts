@@ -1,7 +1,11 @@
 import * as os from "node:os";
 import { discoverHistorySources, scanHistorySources } from "../history/discover.js";
 import type { HistorySource } from "../history/types.js";
-import { nearMissCandidates, rankWorkflowCandidates, strongCandidates } from "../prompts/rank.js";
+import {
+  nearMissCandidates,
+  rankWorkflowCandidatesAsync,
+  strongCandidates,
+} from "../prompts/rank.js";
 import type { WorkflowCandidate } from "../prompts/types.js";
 import {
   buildDraftInvocation,
@@ -101,7 +105,7 @@ export async function runInteractiveSession(
   }
 
   const allCandidates = await withSpinner(spinner, "Ranking repeated workflows...", () =>
-    Promise.resolve(rankWorkflowCandidates(scan.prompts)),
+    rankWorkflowCandidatesAsync(scan.prompts),
   );
   const candidate = await reviewCandidates(prompts, output, allCandidates);
   if (candidate === undefined) {

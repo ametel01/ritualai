@@ -1,5 +1,5 @@
 import type { ExtractedPrompt } from "../../src/history/types.js";
-import { rankWorkflowCandidates } from "../../src/prompts/rank.js";
+import { rankWorkflowCandidates, rankWorkflowCandidatesAsync } from "../../src/prompts/rank.js";
 
 function prompt(id: string, text: string): ExtractedPrompt {
   return { id, source: "codex", sourcePath: "/tmp/history.jsonl", text };
@@ -20,6 +20,19 @@ describe("prompt ranking", () => {
     expect(candidates[0]?.count).toBe(3);
     expect(candidates[0]?.representativePrompts[0]?.text).toBe(prompts[0]?.text);
     expect(candidates[0]?.rankReason).toContain("good skill candidate");
+  });
+
+  it("supports async ranking for interactive progress rendering", async () => {
+    const prompts = [
+      prompt("1", "Review this TypeScript PR for correctness bugs and missing Vitest tests."),
+      prompt("2", "Please review this TypeScript pull request for bugs and missing tests."),
+      prompt("3", "Review this TypeScript PR for CI risks, bugs, and missing coverage."),
+    ];
+
+    const candidates = await rankWorkflowCandidatesAsync(prompts);
+
+    expect(candidates[0]?.isStrong).toBe(true);
+    expect(candidates[0]?.count).toBe(3);
   });
 
   it("exposes two-prompt near misses without marking them strong", () => {

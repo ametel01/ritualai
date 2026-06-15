@@ -50,6 +50,49 @@ export function clusterPrompts(
     .sort((left, right) => right.rankScore - left.rankScore);
 }
 
+export async function clusterPromptsAsync(
+  prompts: Parameters<typeof normalizePrompts>[0],
+  options: ClusterOptions = DEFAULT_CLUSTER_OPTIONS,
+): Promise<WorkflowCandidate[]> {
+  const normalized = normalizePrompts(prompts);
+  const clusters: MutableCluster[] = [];
+
+  for (let index = 0; index < normalized.length; index += 1) {
+    if (index > 0 && index % 25 === 0) {
+      await yieldToEventLoop();
+    }
+    const prompt = normalized[index];
+    if (prompt === undefined) {
+      continue;
+    }
+    const match = clusters.find(
+      (cluster) => averageSimilarity(prompt, cluster) >= options.similarityThreshold,
+    );
+    if (match === undefined) {
+      clusters.push({ prompts: [prompt] });
+    } else {
+      match.prompts.push(prompt);
+    }
+  }
+
+  const candidates: WorkflowCandidate[] = [];
+  const eligibleClusters = clusters.filter(
+    (cluster) => cluster.prompts.length >= options.nearMissThreshold,
+  );
+  for (let index = 0; index < eligibleClusters.length; index += 1) {
+    if (index > 0 && index % 10 === 0) {
+      await yieldToEventLoop();
+    }
+    const cluster = eligibleClusters[index];
+    if (cluster === undefined) {
+      continue;
+    }
+    candidates.push(await buildCandidate(cluster, index, options));
+  }
+
+  return candidates.sort((left, right) => right.rankScore - left.rankScore);
+}
+
 export function mergeCandidates(
   primary: WorkflowCandidate,
   secondary: WorkflowCandidate,
@@ -83,6 +126,31 @@ function averageSimilarity(prompt: NormalizedPrompt, cluster: MutableCluster): n
   return total / cluster.prompts.length;
 }
 
+async function buildCandidate(
+  cluster: MutableCluster,
+  index: number,
+  options: ClusterOptions,
+): Promise<WorkflowCandidate> {
+  const sourcePrompts = cluster.prompts.map((prompt) => prompt.prompt);
+  const coherence = await clusterCoherenceAsync(cluster);
+  const name = candidateName(cluster.prompts.flatMap((prompt) => prompt.tokens));
+  const count = sourcePrompts.length;
+  const isStrong = count >= options.strongThreshold;
+  const rankScore = count * 10 + coherence * 8 + averageDetailScore(sourcePrompts);
+  return {
+    id: `candidate-${index + 1}`,
+    name,
+    summary: summaryFromPrompt(sourcePrompts[0]?.text ?? name),
+    prompts: sourcePrompts,
+    representativePrompts: sourcePrompts.slice(0, 3),
+    count,
+    coherence,
+    rankScore,
+    rankReason: `${count} similar prompt${count === 1 ? "" : "s"} found; ${isStrong ? "good skill candidate" : "possible skill candidate"}.`,
+    isStrong,
+  };
+}
+
 function clusterCoherence(cluster: MutableCluster): number {
   if (cluster.prompts.length < 2) {
     return 1;
@@ -90,6 +158,28 @@ function clusterCoherence(cluster: MutableCluster): number {
   let total = 0;
   let comparisons = 0;
   for (let left = 0; left < cluster.prompts.length; left += 1) {
+    for (let right = left + 1; right < cluster.prompts.length; right += 1) {
+      const leftPrompt = cluster.prompts[left];
+      const rightPrompt = cluster.prompts[right];
+      if (leftPrompt !== undefined && rightPrompt !== undefined) {
+        total += lexicalSimilarity(leftPrompt, rightPrompt);
+        comparisons += 1;
+      }
+    }
+  }
+  return comparisons === 0 ? 0 : total / comparisons;
+}
+
+async function clusterCoherenceAsync(cluster: MutableCluster): Promise<number> {
+  if (cluster.prompts.length < 2) {
+    return 1;
+  }
+  let total = 0;
+  let comparisons = 0;
+  for (let left = 0; left < cluster.prompts.length; left += 1) {
+    if (left > 0 && left % 25 === 0) {
+      await yieldToEventLoop();
+    }
     for (let right = left + 1; right < cluster.prompts.length; right += 1) {
       const leftPrompt = cluster.prompts[left];
       const rightPrompt = cluster.prompts[right];
@@ -150,4 +240,10 @@ function isNoisyNameToken(token: string): boolean {
 function summaryFromPrompt(prompt: string): string {
   const cleaned = prompt.replace(/\s+/g, " ").trim();
   return cleaned.length <= 120 ? cleaned : `${cleaned.slice(0, 117)}...`;
+}
+
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => {
+    setImmediate(resolve);
+  });
 }

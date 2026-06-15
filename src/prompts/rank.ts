@@ -1,5 +1,5 @@
 import type { ExtractedPrompt } from "../history/types.js";
-import { clusterPrompts } from "./cluster.js";
+import { clusterPrompts, clusterPromptsAsync } from "./cluster.js";
 import type { ClusterOptions, WorkflowCandidate } from "./types.js";
 import { DEFAULT_CLUSTER_OPTIONS } from "./types.js";
 
@@ -8,6 +8,13 @@ export function rankWorkflowCandidates(
   options: ClusterOptions = DEFAULT_CLUSTER_OPTIONS,
 ): WorkflowCandidate[] {
   return clusterPrompts(prompts, options);
+}
+
+export function rankWorkflowCandidatesAsync(
+  prompts: ExtractedPrompt[],
+  options: ClusterOptions = DEFAULT_CLUSTER_OPTIONS,
+): Promise<WorkflowCandidate[]> {
+  return clusterPromptsAsync(prompts, options);
 }
 
 export function strongCandidates(candidates: WorkflowCandidate[]): WorkflowCandidate[] {
