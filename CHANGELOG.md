@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Refactored the Ritual CLI entrypoint into a reusable runtime lifecycle wrapper with signal handling, stdin cleanup, help normalization, and top-level error funneling while preserving the one-command/no-flags MVP contract.
 - Switched the project package manager from npm to Bun, replacing `package-lock.json` with `bun.lock` and updating local, CI, and release commands to use `bun`.
 - Made the interactive candidate-review flow friendlier by replacing raw internal slugs, lexical-coherence details, and near-miss terminology with plain workflow summaries and actions.
 - Move directly from choosing a repeated workflow into local-agent draft setup instead of showing a second approval menu.
