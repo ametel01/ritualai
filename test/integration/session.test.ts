@@ -146,6 +146,6 @@ describe("interactive session", () => {
     await expect(readFile(codexPath, "utf8")).resolves.toContain("name: pr-review-workflow");
     expect(outputs.some((line) => line.includes("found 3 user prompts"))).toBe(true);
     expect(outputs.some((line) => line.includes("Matching prompts found locally"))).toBe(true);
-    expect(outputs.some((line) => line.includes(".ritual/drafts"))).toBe(false);
+    expect(outputs.some((line) => line.toLowerCase().includes("draft"))).toBe(false);
   });
 });

@@ -87,11 +87,11 @@ class TerminalSpinner implements SpinnerHandle {
   }
 
   succeed(text = this.text): void {
-    this.finalize(`ok ${text}`);
+    this.finalize(text, { writeLine: false });
   }
 
   fail(text = this.text): void {
-    this.finalize(`fail ${text}`);
+    this.finalize(`fail ${text}`, { writeLine: true });
   }
 
   stop(): void {
@@ -113,14 +113,16 @@ class TerminalSpinner implements SpinnerHandle {
     this.stream.write(`${frame} ${this.text}`);
   }
 
-  private finalize(text: string): void {
+  private finalize(text: string, options: { writeLine: boolean }): void {
     if (this.didFinalize) {
       return;
     }
     this.didFinalize = true;
     this.clearTimer();
     this.clearLine();
-    this.stream.write(`${text}\n`);
+    if (options.writeLine) {
+      this.stream.write(`${text}\n`);
+    }
   }
 
   private clearTimer(): void {

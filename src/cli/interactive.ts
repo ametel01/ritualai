@@ -159,11 +159,11 @@ export async function runInteractiveSession(
     launcher,
   });
   if (exitCode !== 0) {
-    return { status: "cancelled", reason: `Draft agent exited with code ${exitCode}.` };
+    return { status: "cancelled", reason: `Skill agent exited with code ${exitCode}.` };
   }
   const skillContent = await fs.readText(primaryTarget.skillPath);
   if (skillContent.trim().length === 0) {
-    return { status: "cancelled", reason: "Draft agent did not write SKILL.md." };
+    return { status: "cancelled", reason: "Skill agent did not write SKILL.md." };
   }
   output.write(`Skill written to ${primaryTarget.skillPath}`);
 
@@ -253,7 +253,7 @@ function showCandidate(output: Output, candidate: WorkflowCandidate): void {
   for (const prompt of candidate.representativePrompts) {
     output.write(`- ${prompt.text}`);
   }
-  output.write("Next, Ritual will draft a skill from this workflow using your local agent.");
+  output.write("Next, Ritual will open a local agent to write this skill.");
 }
 
 function candidateMenuLabel(candidate: WorkflowCandidate): string {
@@ -277,7 +277,7 @@ async function chooseDraftExecutable(
     return undefined;
   }
 
-  return prompts.select<DraftExecutable>("Generate the draft with", [
+  return prompts.select<DraftExecutable>("Open agent with", [
     ...availableExecutables.map((executable) => ({
       name: draftExecutableLabel(executable),
       value: executable,

@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
+- Removed stale draft wording from the direct skill generation flow and made successful progress spinners clear without printing `ok ...` status lines.
 - Avoid Node's unsettled top-level-await warning during interactive prompts by deferring stdin unref cleanup until the CLI session settles.
 - Parse real Codex session `response_item.payload` records so user-authored prompts are extracted from `~/.codex/sessions`.
 - Ignore injected Codex context blocks such as environment metadata, app/plugin instructions, skill instructions, and `AGENTS.md` context when extracting user prompts.

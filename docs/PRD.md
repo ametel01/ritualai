@@ -74,7 +74,7 @@ Existing history tools help users inspect what happened. Existing skill generato
 10. Ritual recommends whether the selected candidate appears project-specific or global.
 11. The user chooses project-local or global skill scope.
 12. The user chooses Claude, Codex/agents, or both output ecosystems.
-13. Ritual calls a local agent executable to draft a skill for the approved candidate.
+13. Ritual calls a local agent executable to write a skill for the approved candidate.
 14. The selected agent writes the `SKILL.md` directly to the first selected target path.
 15. Ritual validates the written skill and blocks on structural errors.
 16. Ritual mirrors the same `SKILL.md` to any additional selected target paths.
