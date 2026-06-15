@@ -9,6 +9,7 @@
   },
   "files": [
     "dist",
+    "scripts",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
@@ -20,6 +21,7 @@
     "build": "tsc -p tsconfig.build.json",
     "verify": "bun run check && bun run typecheck && bun run test && bun run build",
     "pack:dry-run": "bun pm pack --dry-run",
+    "release:notes": "node scripts/extract-release-notes.mjs",
     "dev": "node dist/cli/main.js"
   },
   "keywords": [

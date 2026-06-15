@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-15
+
 ### Added
 
 - Existing-skill duplicate detection that skips recurring prompt candidates already covered by project-local or global Claude/Codex skills.
@@ -19,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Direct skill writes to selected target paths with built-in `SKILL.md` validation and optional `agnix`.
 - Unit and integration tests covering parsers, ranking, path safety, validation, and the full fixture-driven session flow.
 - GitHub Actions CI and tag-driven Bun release workflow.
+- Release-note extraction from `CHANGELOG.md` for GitHub Releases created by CI.
 
 ### Changed
 
