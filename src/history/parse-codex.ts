@@ -1,6 +1,12 @@
 import { parseRecords, promptFromRecord, toExtractedPrompts } from "./parse-shared.js";
 import type { Diagnostic } from "./types.js";
 
+type CodexPromptHistoryRecord = {
+  text?: unknown;
+  session_id?: unknown;
+  ts?: unknown;
+};
+
 export function parseCodexHistoryFile(
   sourcePath: string,
   content: string,
@@ -10,7 +16,7 @@ export function parseCodexHistoryFile(
 } {
   const parsed = parseRecords(content, sourcePath);
   const candidates = parsed.records
-    .map((record) => promptFromRecord(record.value))
+    .map((record) => promptFromRecord(record.value) ?? promptFromCodexHistoryRecord(record.value))
     .filter((prompt): prompt is NonNullable<typeof prompt> => prompt !== undefined);
 
   return {
@@ -32,4 +38,46 @@ export function parseCodexHistoryFile(
           ]
         : parsed.diagnostics,
   };
+}
+
+function promptFromCodexHistoryRecord(record: unknown):
+  | {
+      text: string;
+      sessionId?: string;
+      createdAt?: string;
+    }
+  | undefined {
+  if (!isRecord(record)) {
+    return undefined;
+  }
+
+  const historyRecord = record as CodexPromptHistoryRecord;
+  const text = stringValue(historyRecord.text);
+  if (text === undefined || text.trim().length === 0) {
+    return undefined;
+  }
+
+  const sessionId = stringValue(historyRecord.session_id);
+  const createdAt = timestampToIsoString(historyRecord.ts);
+
+  return {
+    text: text.trim(),
+    ...(sessionId === undefined ? {} : { sessionId }),
+    ...(createdAt === undefined ? {} : { createdAt }),
+  };
+}
+
+function timestampToIsoString(value: unknown): string | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return undefined;
+  }
+  return new Date(value * 1000).toISOString();
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

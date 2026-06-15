@@ -34,8 +34,13 @@ export type HistoryScanResult = {
   diagnostics: Diagnostic[];
 };
 
+export type HistoryDiscoveryEnvironment = Record<string, string | undefined> & {
+  CLAUDE_CONFIG_DIR?: string;
+};
+
 export type HistoryDiscoveryOptions = {
   cwd: string;
   homeDir: string;
+  env?: HistoryDiscoveryEnvironment;
   extraSources?: HistorySource[];
 };

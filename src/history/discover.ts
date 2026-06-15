@@ -17,9 +17,10 @@ export async function discoverHistorySources(options: HistoryDiscoveryOptions): 
   diagnostics: Diagnostic[];
 }> {
   const diagnostics: Diagnostic[] = [];
+  const claudeConfigDir = options.env?.CLAUDE_CONFIG_DIR ?? path.join(options.homeDir, ".claude");
   const candidates: HistorySource[] = [
-    { kind: "claude", path: path.join(options.homeDir, ".claude", "projects") },
-    { kind: "codex", path: path.join(options.homeDir, ".codex", "sessions") },
+    { kind: "claude", path: path.join(claudeConfigDir, "history.jsonl") },
+    { kind: "codex", path: path.join(options.homeDir, ".codex", "history.jsonl") },
     ...(options.extraSources ?? []),
   ];
 

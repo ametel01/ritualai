@@ -72,14 +72,14 @@ export async function runInteractiveSession(
   output.write("Ritual scans local Claude and Codex history to find repeated workflow prompts.");
 
   const discovered = await withSpinner(spinner, "Finding local history sources...", () =>
-    discoverHistorySources({ cwd, homeDir }),
+    discoverHistorySources({ cwd, homeDir, env }),
   );
   let sources = discovered.sources;
   if (sources.length === 0) {
     const extraSources = await askForExtraSources(prompts);
     if (extraSources.length > 0) {
       const withExtra = await withSpinner(spinner, "Finding extra history sources...", () =>
-        discoverHistorySources({ cwd, homeDir, extraSources }),
+        discoverHistorySources({ cwd, homeDir, env, extraSources }),
       );
       sources = withExtra.sources;
       discovered.diagnostics.push(...withExtra.diagnostics);

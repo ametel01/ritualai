@@ -50,8 +50,8 @@ history.
 
 Ritual scans these defaults when they exist:
 
-- Claude: `~/.claude/projects/**/*.json` and `~/.claude/projects/**/*.jsonl`
-- Codex: `~/.codex/sessions/**/*.json` and `~/.codex/sessions/**/*.jsonl`
+- Claude: `~/.claude/history.jsonl` (or `$CLAUDE_CONFIG_DIR/history.jsonl`)
+- Codex: `~/.codex/history.jsonl`
 
 The interactive flow can add one extra Claude or Codex history file or directory.
 Malformed records produce diagnostics and do not stop other files from being

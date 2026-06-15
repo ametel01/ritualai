@@ -31,6 +31,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Detect available local draft generators and ask the user to choose Claude Code or Codex before creating the `SKILL.md` draft, instead of silently preferring the first executable found.
 - Summarize scanned history sources and repeated diagnostics so users see concise totals instead of a long line-by-line dump for every skipped session file.
 - Cleanly handle terminal prompt cancellation and release stdin after the interactive CLI settles.
+- Use Codex prompt history from `~/.codex/history.jsonl` as the default Codex source instead of full session transcripts.
+- Use Claude prompt history from `~/.claude/history.jsonl`, honoring `CLAUDE_CONFIG_DIR`, as the default Claude source instead of full session transcripts.
 
 ### Fixed
 
