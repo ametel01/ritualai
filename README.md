@@ -1,6 +1,6 @@
 # Ritual
 
-Ritual is an interactive TypeScript CLI that scans local Claude and Codex prompt
+RitualAI is an interactive TypeScript CLI that scans local Claude and Codex prompt
 history, finds repeated workflow candidates, and guides one approved candidate into
 a reusable `SKILL.md`.
 
