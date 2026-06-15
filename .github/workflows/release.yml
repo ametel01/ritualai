@@ -23,7 +23,7 @@ jobs:
         run: node scripts/extract-release-notes.mjs "${GITHUB_REF_NAME#v}" > release-notes.md
       - run: bun publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
       - uses: softprops/action-gh-release@v2
         with:
           body_path: release-notes.md
