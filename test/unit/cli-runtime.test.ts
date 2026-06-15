@@ -39,18 +39,21 @@ describe("cli runtime", () => {
 
   it("runs the interactive session when no args are supplied", async () => {
     const stdout: string[] = [];
+    const stdin = new FakeStdin();
 
     await runCli({
       argv: ["node", "ritual"],
-      stdin: new FakeStdin(),
+      stdin,
       output: { stdout: (message) => stdout.push(message), stderr: () => undefined },
       setExitCode: () => undefined,
       async runInteractive(): Promise<SessionResult> {
+        expect(stdin.unrefCalls).toBe(0);
         return { status: "cancelled", reason: "done" };
       },
     });
 
     expect(stdout).toEqual(["Ritual stopped: done"]);
+    expect(stdin.unrefCalls).toBe(1);
   });
 
   it("funnels unexpected top-level errors through a stable Ritual message", async () => {

@@ -27,10 +27,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Move directly from choosing a repeated workflow into local-agent draft setup instead of showing a second approval menu.
 - Detect available local draft generators and ask the user to choose Claude Code or Codex before creating the `SKILL.md` draft, instead of silently preferring the first executable found.
 - Summarize scanned history sources and repeated diagnostics so users see concise totals instead of a long line-by-line dump for every skipped session file.
-- Cleanly handle terminal prompt cancellation and release stdin after real prompt interactions.
+- Cleanly handle terminal prompt cancellation and release stdin after the interactive CLI settles.
 
 ### Fixed
 
+- Avoid Node's unsettled top-level-await warning during interactive prompts by deferring stdin unref cleanup until the CLI session settles.
 - Parse real Codex session `response_item.payload` records so user-authored prompts are extracted from `~/.codex/sessions`.
 - Ignore injected Codex context blocks such as environment metadata, app/plugin instructions, skill instructions, and `AGENTS.md` context when extracting user prompts.
 - Avoid generating suggested skill names from attachment/path noise such as image filenames and local filesystem fragments.

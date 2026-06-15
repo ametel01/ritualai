@@ -22,8 +22,8 @@ export type RunCliOptions = {
 
 export async function runCli(options: RunCliOptions = {}): Promise<void> {
   installGracefulExitHandlers();
-  unrefStdin(options.stdin ?? process.stdin);
-  guardStdin(options.stdin ?? process.stdin);
+  const stdin = options.stdin ?? process.stdin;
+  guardStdin(stdin);
 
   const argv = options.argv ?? process.argv;
   const args = normalizeHelpInvocation(argv.slice(2));
@@ -40,6 +40,7 @@ export async function runCli(options: RunCliOptions = {}): Promise<void> {
   if (args.length > 0) {
     output.stderr("Ritual has one interactive command and no subcommands or flags.");
     setExitCode(1);
+    unrefStdin(stdin);
     return;
   }
 
@@ -50,6 +51,8 @@ export async function runCli(options: RunCliOptions = {}): Promise<void> {
     }
   } catch (error) {
     handleTopLevelError(error, output, setExitCode);
+  } finally {
+    unrefStdin(stdin);
   }
 }
 

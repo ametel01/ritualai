@@ -54,7 +54,5 @@ async function runPrompt<T>(operation: () => Promise<T>): Promise<T> {
       throw new PromptCancelledError();
     }
     throw error;
-  } finally {
-    process.stdin.unref?.();
   }
 }
