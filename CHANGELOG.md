@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-21
+
 ### Fixed
 
 - Filter injected runtime context that was previously bypassing the final reusable prompt boundary for plain string history content and prompt-history text values.
