@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Make CLI stdin guarding idempotent across repeated `runCli` calls and avoid double stdin unref on help.
 - Bound history discovery and scanning with deterministic caps and warning diagnostics for truncated roots or oversized files.
 - Align the agent-discovery contract documentation with the current same-window handoff model in MVP.
+- Tighten existing-skill duplicate scoring to reduce false positives from short generic skills suppressing broader candidates.
 
 ## [0.3.1] - 2026-06-20
 

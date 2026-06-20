@@ -26,7 +26,7 @@ relevant row when done.
 | 015 | Make the CLI stdin lifecycle idempotent | P2 | S | - | DONE |
 | 016 | Resolve the agent discovery contract in the docs | P2 | S | - | DONE |
 | 017 | Spike a bounded local history index or cache strategy | P3 | M | 013, 014 | TODO |
-| 018 | Tighten existing-skill duplicate scoring | P2 | M | - | TODO |
+| 018 | Tighten existing-skill duplicate scoring | P2 | M | - | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale).

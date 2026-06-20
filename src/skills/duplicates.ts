@@ -121,8 +121,9 @@ function duplicateScore(candidate: WorkflowCandidate, skill: ExistingSkill): num
     return 0;
   }
   const intersection = [...candidateTokens].filter((token) => skillTokens.has(token)).length;
-  const smallerSetSize = Math.min(candidateTokens.size, skillTokens.size);
-  return intersection / smallerSetSize;
+  const candidateCoverage = intersection / candidateTokens.size;
+  const skillCoverage = intersection / skillTokens.size;
+  return Math.min(candidateCoverage, skillCoverage);
 }
 
 function tokensForText(text: string): Set<string> {

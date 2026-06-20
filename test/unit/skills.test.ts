@@ -88,6 +88,52 @@ describe("skill duplicate detection", () => {
     expect(result.available).toEqual([]);
     expect(result.covered[0]?.skill.name).toBe("commit-all-changes-logically");
   });
+
+  it("keeps a broader candidate when overlap comes from generic short existing skill text", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "ritual-dupes-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "ritual-dupes-home-"));
+    await mkdir(path.join(cwd, ".claude", "skills", "review-tests"), {
+      recursive: true,
+    });
+    await writeFile(
+      path.join(cwd, ".claude", "skills", "review-tests", "SKILL.md"),
+      [
+        "---",
+        "name: review-tests",
+        "description: Use when reviewing test changes.",
+        "---",
+        "",
+        "Review tests for regressions.",
+      ].join("\n"),
+    );
+
+    const candidate = {
+      id: "candidate-2",
+      name: "review-release-automation",
+      summary:
+        "Review tests and release automation process including publishing, changelog generation, required gating checks, and rollback notes.",
+      prompts: [],
+      representativePrompts: [
+        prompt("prompt-2", "review test results and create a release for this repository"),
+      ],
+      count: 4,
+      coherence: 1,
+      rankScore: 12,
+      rankReason: "Release-oriented repeated workflow.",
+      isStrong: true,
+    };
+
+    const result = await filterCoveredCandidates([candidate], {
+      cwd,
+      homeDir,
+      scope: "project",
+      ecosystems: ["claude", "codex"],
+      fs: nodeFileSystem,
+    });
+
+    expect(result.available).toEqual([candidate]);
+    expect(result.covered).toEqual([]);
+  });
 });
 
 describe("skill draft executables", () => {
