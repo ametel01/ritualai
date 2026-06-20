@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-20
+
 ### Added
 
 - Add `ritual prompts` and `ritual --prompts` to dump the latest extracted user prompts in descending date order, with `--limit`/`-n` support for changing the default 100-prompt count.
