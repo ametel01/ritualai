@@ -47,6 +47,27 @@ describe("history parsers", () => {
     expect(result.diagnostics).toEqual([]);
   });
 
+  it("omits invalid finite Claude timestamps without failing", () => {
+    const result = parseClaudeHistoryFile(
+      "/tmp/history.jsonl",
+      [
+        JSON.stringify({
+          display: "review this workflow",
+          timestamp: 1e20,
+        }),
+      ].join("\n"),
+    );
+
+    expect(result.prompts).toHaveLength(1);
+    expect(result.prompts[0]).toMatchObject({
+      source: "claude",
+      sourcePath: "/tmp/history.jsonl",
+      text: "review this workflow",
+    });
+    expect(result.prompts[0]).not.toHaveProperty("createdAt");
+    expect(result.diagnostics).toEqual([]);
+  });
+
   it("extracts only user prompts from Codex records and reports malformed lines", () => {
     const result = parseCodexHistoryFile(
       "/tmp/codex.jsonl",
@@ -465,6 +486,29 @@ describe("history parsers", () => {
     });
     expect(result.diagnostics).toEqual([]);
   });
+
+  it("omits invalid finite Codex timestamps without failing", () => {
+    const result = parseCodexHistoryFile(
+      "/tmp/history.jsonl",
+      [
+        JSON.stringify({
+          session_id: "bad",
+          ts: 1e20,
+          text: "review this workflow",
+        }),
+      ].join("\n"),
+    );
+
+    expect(result.prompts).toHaveLength(1);
+    expect(result.prompts[0]).toMatchObject({
+      source: "codex",
+      sourcePath: "/tmp/history.jsonl",
+      sessionId: "bad",
+      text: "review this workflow",
+    });
+    expect(result.prompts[0]).not.toHaveProperty("createdAt");
+    expect(result.diagnostics).toEqual([]);
+  });
 });
 
 describe("history discovery", () => {
@@ -615,6 +659,36 @@ describe("history scanning", () => {
     const result = await scanHistorySources([{ kind: "codex", path: historyPath }]);
 
     expect(result.prompts.map((prompt) => prompt.sessionId)).toEqual(["first", "second"]);
+  });
+
+  it("scans mixed valid and invalid-timestamp Codex prompts without dropping source", async () => {
+    const homeDir = await mkdtempInTest("ritual-history-scan-");
+    const historyPath = path.join(homeDir, "history.jsonl");
+    const validText = "Review this PR for correctness bugs.";
+    await writeFile(
+      historyPath,
+      [
+        JSON.stringify({ session_id: "bad", ts: 1e20, text: "old malformed timestamp" }),
+        JSON.stringify({ session_id: "good", ts: 1775423768, text: validText }),
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await scanHistorySources([{ kind: "codex", path: historyPath }]);
+
+    expect(result.prompts.map((prompt) => prompt.text)).toEqual([
+      "old malformed timestamp",
+      validText,
+    ]);
+    expect(result.prompts.find((prompt) => prompt.sessionId === "bad")?.createdAt).toBeUndefined();
+    expect(result.prompts.find((prompt) => prompt.sessionId === "good")?.createdAt).toBe(
+      "2026-04-05T21:16:08.000Z",
+    );
+    expect(
+      result.diagnostics.some((diagnostic) =>
+        diagnostic.message.includes("Failed to read history source"),
+      ),
+    ).toBe(false);
   });
 });
 

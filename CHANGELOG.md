@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Guard history timestamp conversion in Claude and Codex parsers against out-of-range finite
+  values so malformed records are skipped without crashing scanning.
+
 ## [0.3.0] - 2026-06-20
 
 ### Added

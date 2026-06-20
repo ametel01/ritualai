@@ -71,7 +71,8 @@ function timestampToIsoString(value: unknown): string | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     return undefined;
   }
-  return new Date(value).toISOString();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
 function stringValue(value: unknown): string | undefined {
