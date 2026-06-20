@@ -48,4 +48,51 @@ describe("prompt dump", () => {
 
     expect(latestPrompts(prompts).map((prompt) => prompt.id)).toEqual(["dated", "undated"]);
   });
+
+  it("separates prompt rows from malformed-record diagnostics", async () => {
+    const homeDir = await mkdtemp(path.join(tmpdir(), "ritual-prompt-dump-"));
+    const codexHome = path.join(homeDir, ".codex");
+    await mkdir(codexHome, { recursive: true });
+    const historyPath = path.join(codexHome, "history.jsonl");
+    await writeFile(
+      historyPath,
+      [
+        JSON.stringify({ session_id: "newest", ts: 1775423770, text: "newest prompt" }),
+        "not-json",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const lines: string[] = [];
+    const diagnostics: string[] = [];
+    const result = await runPromptDump({
+      cwd: "/tmp/project",
+      homeDir,
+      output: { write: (message) => lines.push(message) },
+      diagnosticsOutput: { write: (message) => diagnostics.push(message) },
+    });
+
+    expect(result).toEqual({ status: "completed", count: 1 });
+    expect(lines).toEqual(["2026-04-05T21:16:10.000Z\tcodex\tnewest prompt"]);
+    expect(diagnostics.join("\n")).toContain(
+      "Scanned 1 codex history file and found 1 user prompt.",
+    );
+    expect(diagnostics.join("\n")).toContain("[warning]");
+  });
+
+  it("reports no supported sources on empty home directories", async () => {
+    const homeDir = await mkdtemp(path.join(tmpdir(), "ritual-prompt-dump-"));
+    const diagnostics: string[] = [];
+    const lines: string[] = [];
+
+    const result = await runPromptDump({
+      homeDir,
+      output: { write: (message) => lines.push(message) },
+      diagnosticsOutput: { write: (message) => diagnostics.push(message) },
+    });
+
+    expect(result).toEqual({ status: "completed", count: 0 });
+    expect(lines).toEqual([]);
+    expect(diagnostics).toContain("No supported history sources were scanned.");
+  });
 });

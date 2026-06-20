@@ -1,6 +1,7 @@
 import * as os from "node:os";
 import { discoverHistorySources, scanHistorySources } from "../history/discover.js";
 import type { ExtractedPrompt, HistoryDiscoveryEnvironment } from "../history/types.js";
+import { formatDiagnostics, formatSourceSummary } from "../telemetry/diagnostics.js";
 
 const DEFAULT_LIMIT = 100;
 
@@ -14,6 +15,7 @@ export type PromptDumpOptions = {
   env?: HistoryDiscoveryEnvironment;
   limit?: number;
   output?: PromptDumpOutput;
+  diagnosticsOutput?: PromptDumpOutput;
 };
 
 export type PromptDumpResult = {
@@ -27,10 +29,24 @@ export async function runPromptDump(options: PromptDumpOptions = {}): Promise<Pr
   const env = options.env ?? process.env;
   const limit = options.limit ?? DEFAULT_LIMIT;
   const output = options.output ?? { write: (message: string) => console.log(message) };
+  const diagnosticsOutput = options.diagnosticsOutput ?? {
+    write: (message: string) => console.error(message),
+  };
 
   const discovered = await discoverHistorySources({ cwd, homeDir, env });
   const scan = await scanHistorySources(discovered.sources);
   const prompts = latestPrompts(scan.prompts, limit);
+  const nonInfoDiagnostic = (diagnostic: { level: string }) => diagnostic.level !== "info";
+
+  for (const line of formatSourceSummary(scan.sources)) {
+    diagnosticsOutput.write(line);
+  }
+  for (const line of formatDiagnostics(discovered.diagnostics.filter(nonInfoDiagnostic))) {
+    diagnosticsOutput.write(line);
+  }
+  for (const line of formatDiagnostics(scan.diagnostics.filter(nonInfoDiagnostic))) {
+    diagnosticsOutput.write(line);
+  }
 
   for (const prompt of prompts) {
     output.write(formatPromptLine(prompt));

@@ -127,7 +127,32 @@ describe("cli runtime", () => {
 
     expect(dumpOptions).toHaveLength(1);
     expect(dumpOptions[0]?.limit).toBe(100);
+    expect(dumpOptions[0]?.diagnosticsOutput).toBeDefined();
     expect(stdin.unrefCalls).toBe(1);
+  });
+
+  it("passes a separate diagnostics output when running prompts", async () => {
+    const stdin = new FakeStdin();
+    const diagnosticSink: string[] = [];
+    const promptSink: string[] = [];
+
+    await runCli({
+      argv: ["node", "ritual", "prompts", "--limit", "3"],
+      stdin,
+      output: {
+        stdout: (message) => promptSink.push(message),
+        stderr: (message) => diagnosticSink.push(message),
+      },
+      setExitCode: () => undefined,
+      async runPromptDump(options): Promise<PromptDumpResult> {
+        options.output?.write("prompt output");
+        options.diagnosticsOutput?.write("diagnostic output");
+        return { status: "completed", count: 1 };
+      },
+    });
+
+    expect(promptSink).toContain("prompt output");
+    expect(diagnosticSink).toContain("diagnostic output");
   });
 
   it("runs the prompt dump command with an explicit limit", async () => {

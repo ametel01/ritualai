@@ -64,6 +64,7 @@ export async function runCli(options: RunCliOptions = {}): Promise<void> {
         env: process.env,
         limit: command.limit,
         output: { write: output.stdout },
+        diagnosticsOutput: { write: output.stderr },
       });
     } else {
       const result = await (options.runInteractive ?? runInteractiveSession)();
