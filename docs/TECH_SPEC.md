@@ -438,3 +438,4 @@ Required before first public release:
 - Should local clustering use a hand-rolled lexical algorithm or a small dependency?
 - Should release notes be generated directly from `CHANGELOG.md` sections or maintained separately in GitHub Releases?
 - Should npm trusted publishing be added after Bun supports the required provenance workflow?
+- Should a persistent history index/cache be introduced before planing a metadata-only cache design (see `docs/history-index-cache-spike.md`)?

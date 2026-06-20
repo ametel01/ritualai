@@ -25,7 +25,7 @@ relevant row when done.
 | 014 | Bound history discovery and parsing work | P1 | M | 013 | DONE |
 | 015 | Make the CLI stdin lifecycle idempotent | P2 | S | - | DONE |
 | 016 | Resolve the agent discovery contract in the docs | P2 | S | - | DONE |
-| 017 | Spike a bounded local history index or cache strategy | P3 | M | 013, 014 | TODO |
+| 017 | Spike a bounded local history index or cache strategy | P3 | M | 013, 014 | DONE |
 | 018 | Tighten existing-skill duplicate scoring | P2 | M | - | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
