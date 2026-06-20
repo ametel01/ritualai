@@ -88,7 +88,7 @@ export async function runInteractiveSession(
     }
   }
 
-  for (const line of formatDiagnostics(discovered.diagnostics.filter(isErrorDiagnostic))) {
+  for (const line of formatDiagnostics(discovered.diagnostics.filter(isVisibleDiagnostic))) {
     output.write(line);
   }
 
@@ -96,7 +96,7 @@ export async function runInteractiveSession(
   for (const line of formatSourceSummary(scan.sources)) {
     output.write(line);
   }
-  for (const line of formatDiagnostics(scan.diagnostics.filter(isErrorDiagnostic))) {
+  for (const line of formatDiagnostics(scan.diagnostics.filter(isVisibleDiagnostic))) {
     output.write(line);
   }
 
@@ -196,6 +196,9 @@ export async function runInteractiveSession(
   const validation = await validateSkillDraft({ draftDir: primaryTarget.skillDir, fs, runner });
   for (const error of validation.errors) {
     output.write(`[error] ${error.message}`);
+  }
+  for (const warning of validation.warnings) {
+    output.write(`[warning] ${warning.message}`);
   }
   if (validation.errors.length > 0) {
     return { status: "cancelled", reason: "Skill validation failed." };
@@ -483,8 +486,8 @@ function previewInvocation(executable: DraftExecutable): string {
   return [invocation.command, ...argsWithoutPrompt].join(" ");
 }
 
-function isErrorDiagnostic(diagnostic: { level: string }): boolean {
-  return diagnostic.level === "error";
+function isVisibleDiagnostic(diagnostic: { level: string }): boolean {
+  return diagnostic.level !== "info";
 }
 
 async function withSpinner<T>(

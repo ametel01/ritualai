@@ -76,9 +76,29 @@ class MockRunner implements CommandRunner {
 }
 
 class MockLauncher implements CommandLauncher {
-  invocations: Array<{ invocation: CommandInvocation; cwd: string }> = [];
+  readonly skillPath: string;
+  readonly skillContent: string;
 
-  constructor(private readonly skillPath: string) {}
+  constructor(
+    skillPath: string,
+    skillContent: string = [
+      "---",
+      "name: pr-review-workflow",
+      "description: Use when reviewing TypeScript pull requests for correctness, CI risk, and test coverage.",
+      "---",
+      "",
+      "## Workflow",
+      "",
+      "- Inspect the changed files and identify behavior changes.",
+      "- Check package scripts, tests, and CI expectations.",
+      "- Report findings with file references and concrete fixes.",
+    ].join("\n"),
+  ) {
+    this.skillPath = skillPath;
+    this.skillContent = skillContent;
+  }
+
+  invocations: Array<{ invocation: CommandInvocation; cwd: string }> = [];
 
   async launch(invocation: CommandInvocation, options: { cwd: string }): Promise<number> {
     this.invocations.push({ invocation, cwd: options.cwd });
@@ -86,21 +106,7 @@ class MockLauncher implements CommandLauncher {
     if (prompt.includes("selected local agent window")) {
       return 0;
     }
-    await nodeFileSystem.writeTextAtomic(
-      this.skillPath,
-      [
-        "---",
-        "name: pr-review-workflow",
-        "description: Use when reviewing TypeScript pull requests for correctness, CI risk, and test coverage.",
-        "---",
-        "",
-        "## Workflow",
-        "",
-        "- Inspect the changed files and identify behavior changes.",
-        "- Check package scripts, tests, and CI expectations.",
-        "- Report findings with file references and concrete fixes.",
-      ].join("\n"),
-    );
+    await nodeFileSystem.writeTextAtomic(this.skillPath, this.skillContent);
     return 0;
   }
 }
@@ -242,5 +248,79 @@ describe("interactive session", () => {
     );
     await expect(access(claudePath)).rejects.toThrow();
     await expect(access(path.join(cwd, ".ritual"))).rejects.toThrow();
+  });
+
+  it("continues local fallback on validation warnings and writes the generated SKILL.md", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "ritual-session-cwd-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "ritual-session-home-"));
+    const historyPath = path.join(homeDir, "history.jsonl");
+    const basePrompts = [
+      "review dependency updates in changelog and patch files",
+      "review dependency updates in changelog and patch files now",
+      "review dependency updates in changelog and patch files carefully",
+    ];
+    await writeFile(
+      historyPath,
+      basePrompts
+        .map((prompt, index) =>
+          JSON.stringify({
+            session_id: `session-${index + 1}`,
+            ts: 1775423768 + index,
+            text: prompt,
+          }),
+        )
+        .join("\n"),
+      "utf8",
+    );
+
+    const runner = new MockRunner();
+    const warningLauncher = new MockLauncher(
+      path.join(cwd, ".claude", "skills", "pr-review-workflow", "SKILL.md"),
+      [
+        "---",
+        "name: pr-review-workflow",
+        "description: Use when reviewing TypeScript pull requests for correctness and test coverage.",
+        "---",
+        "",
+        "Do the task and be helpful.",
+      ].join("\n"),
+    );
+    const outputs: string[] = [];
+    const prompts = new QueuePrompts({
+      confirms: [true, false],
+      inputs: [historyPath, "pr-review-workflow"],
+      selects: ["codex", "candidate-1", "project", "claude"],
+      checkboxes: [["claude"]],
+    });
+
+    const result = await runInteractiveSession({
+      cwd,
+      homeDir,
+      env: {},
+      prompts,
+      output: { write: (message) => outputs.push(message) },
+      fs: nodeFileSystem,
+      runner,
+      launcher: warningLauncher,
+    });
+
+    expect(result).toEqual({
+      status: "completed",
+      writtenPaths: [path.join(cwd, ".claude", "skills", "pr-review-workflow", "SKILL.md")],
+      skillPath: path.join(cwd, ".claude", "skills", "pr-review-workflow", "SKILL.md"),
+    });
+    expect(warningLauncher.invocations).toHaveLength(1);
+    expect(
+      outputs.some((line) => line.includes("Using Ritual's local repeated-workflow ranking.")),
+    ).toBe(true);
+    expect(outputs.some((line) => line.includes("[warning] Skill body appears generic."))).toBe(
+      true,
+    );
+    expect(
+      outputs.some((line) =>
+        line.includes("[warning] Skill body does not appear to include concrete workflow steps."),
+      ),
+    ).toBe(true);
+    await expect(access(warningLauncher.skillPath)).resolves.toBeUndefined();
   });
 });

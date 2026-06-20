@@ -15,6 +15,11 @@ export type SkillValidationResult = {
   agnixAvailable: boolean;
 };
 
+type AgnixResult = {
+  available: boolean;
+  issue?: ValidationIssue;
+};
+
 type Frontmatter = {
   data: Map<string, string>;
   body: string;
@@ -47,7 +52,11 @@ export async function validateSkillDraft(options: {
       code: "invalid-frontmatter",
       message: "SKILL.md must start with YAML frontmatter.",
     });
-    return { errors, warnings, agnixAvailable: await runAgnix(options.runner, skillPath) };
+    return addAgnixIssue({
+      agnix: await runAgnix(options.runner, skillPath),
+      errors,
+      warnings,
+    });
   }
 
   const keys = [...frontmatter.data.keys()];
@@ -109,10 +118,28 @@ export async function validateSkillDraft(options: {
     });
   }
 
+  const agnix = await runAgnix(options.runner, skillPath);
+  const withAgnixResult = addAgnixIssue({ agnix, errors, warnings });
+
   return {
-    errors,
-    warnings,
-    agnixAvailable: await runAgnix(options.runner, skillPath),
+    errors: withAgnixResult.errors,
+    warnings: withAgnixResult.warnings,
+    agnixAvailable: withAgnixResult.agnixAvailable,
+  };
+}
+
+function addAgnixIssue(context: {
+  agnix: AgnixResult;
+  errors: ValidationIssue[];
+  warnings: ValidationIssue[];
+}): { errors: ValidationIssue[]; warnings: ValidationIssue[]; agnixAvailable: boolean } {
+  if (context.agnix.issue !== undefined) {
+    context.errors.push(context.agnix.issue);
+  }
+  return {
+    errors: context.errors,
+    warnings: context.warnings,
+    agnixAvailable: context.agnix.available,
   };
 }
 
@@ -156,10 +183,23 @@ async function hasBundledResources(draftDir: string): Promise<boolean> {
   );
 }
 
-async function runAgnix(runner: CommandRunner | undefined, skillPath: string): Promise<boolean> {
+async function runAgnix(
+  runner: CommandRunner | undefined,
+  skillPath: string,
+): Promise<AgnixResult> {
   if (runner === undefined || (await runner.which("agnix")) === undefined) {
-    return false;
+    return { available: false };
   }
-  await runner.run({ command: "agnix", args: ["validate", skillPath] });
-  return true;
+  try {
+    await runner.run({ command: "agnix", args: ["validate", skillPath] });
+    return { available: true };
+  } catch {
+    return {
+      available: true,
+      issue: {
+        code: "agnix-validation-failed",
+        message: "agnix validation failed for generated SKILL.md.",
+      },
+    };
+  }
 }

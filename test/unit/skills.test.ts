@@ -269,4 +269,56 @@ describe("skill validation", () => {
 
     expect(result.errors.map((error) => error.code)).toContain("invalid-frontmatter");
   });
+
+  it("returns warnings for generic language and missing concrete workflow steps", async () => {
+    const draftDir = await mkdtemp(path.join(os.tmpdir(), "ritual-valid-warnings-"));
+    await writeFile(
+      path.join(draftDir, "SKILL.md"),
+      [
+        "---",
+        "name: review-pr",
+        "description: Use when reviewing TypeScript pull requests for correctness and test coverage.",
+        "---",
+        "",
+        "Do the task and be helpful.",
+      ].join("\n"),
+    );
+
+    const result = await validateSkillDraft({ draftDir, fs: nodeFileSystem });
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings.map((warning) => warning.code)).toContain("generic-body");
+    expect(result.warnings.map((warning) => warning.code)).toContain("missing-workflow-steps");
+  });
+
+  it("reports agnix validation failures as structured errors", async () => {
+    const draftDir = await mkdtemp(path.join(os.tmpdir(), "ritual-agnix-fail-"));
+    await writeFile(
+      path.join(draftDir, "SKILL.md"),
+      [
+        "---",
+        "name: review-pr",
+        "description: Use when reviewing TypeScript pull requests for correctness and test coverage.",
+        "---",
+        "",
+        "## Workflow",
+        "",
+        "- Inspect the diff and identify behavior changes.",
+        "- Check tests and CI commands before recommending fixes.",
+      ].join("\n"),
+    );
+    const runner: CommandRunner = {
+      async which(command: string): Promise<string | undefined> {
+        return command === "agnix" ? "/usr/local/bin/agnix" : undefined;
+      },
+      async run(_invocation: CommandInvocation): Promise<CommandResult> {
+        throw new Error("agnix command failed");
+      },
+    };
+
+    const result = await validateSkillDraft({ draftDir, fs: nodeFileSystem, runner });
+
+    expect(result.errors.map((error) => error.code)).toContain("agnix-validation-failed");
+    expect(result.agnixAvailable).toBe(true);
+  });
 });

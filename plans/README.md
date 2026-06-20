@@ -9,7 +9,7 @@ starting, honor its STOP conditions, and update the relevant row when done.
 | Plan | Title | Priority | Effort | Depends on | Status |
 |---|---|---|---|---|---|
 | 001 | Guard history timestamp conversion | P1 | S | - | DONE |
-| 002 | Surface validation warnings and agnix failures | P1 | M | - | TODO |
+| 002 | Surface validation warnings and agnix failures | P1 | M | - | DONE |
 | 003 | Cover the fallback write and mirror path | P1 | M | - | TODO |
 | 004 | Implement real CLI help output | P2 | S | - | TODO |
 | 005 | Surface prompt-dump diagnostics | P2 | S | - | TODO |
