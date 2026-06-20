@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   values so malformed records are skipped without crashing scanning.
 - Surface skill validation warnings in interactive output and report `agnix` validation failures
   as structured validation errors without throwing.
+- Add integration coverage for local fallback generation, ecosystem mirroring, single-target writes, and overwrite-denial.
 
 ## [0.3.0] - 2026-06-20
 

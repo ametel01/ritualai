@@ -323,4 +323,147 @@ describe("interactive session", () => {
     ).toBe(true);
     await expect(access(warningLauncher.skillPath)).resolves.toBeUndefined();
   });
+
+  it("mirrors generated skills to all selected output ecosystems", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "ritual-session-cwd-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "ritual-session-home-"));
+    const historyPath = path.join(homeDir, "history.jsonl");
+    await writeFile(
+      historyPath,
+      [
+        JSON.stringify({
+          session_id: "session-1",
+          ts: 1775423768,
+          text: "review dependency updates in changelog and patch files",
+        }),
+        JSON.stringify({
+          session_id: "session-2",
+          ts: 1775423780,
+          text: "review dependency updates in changelog and patch files now",
+        }),
+        JSON.stringify({
+          session_id: "session-3",
+          ts: 1775423790,
+          text: "review dependency updates in changelog and patch files carefully",
+        }),
+      ].join("\n"),
+      "utf8",
+    );
+
+    const claudePath = path.join(cwd, ".claude", "skills", "pr-review-workflow", "SKILL.md");
+    const codexPath = path.join(cwd, ".agents", "skills", "pr-review-workflow", "SKILL.md");
+    const skillContent = [
+      "---",
+      "name: pr-review-workflow",
+      "description: Use when reviewing TypeScript pull requests for correctness and test coverage.",
+      "---",
+      "",
+      "## Workflow",
+      "",
+      "- Inspect the changed files and identify behavior changes.",
+      "- Check package scripts, tests, and CI expectations.",
+      "- Report findings with file references and concrete fixes.",
+    ].join("\n");
+    const launcher = new MockLauncher(claudePath, skillContent);
+    const outputs: string[] = [];
+    const prompts = new QueuePrompts({
+      confirms: [true, false],
+      inputs: [historyPath, "pr-review-workflow"],
+      selects: ["codex", "candidate-1", "project", "claude"],
+      checkboxes: [["claude", "codex"]],
+    });
+
+    const result = await runInteractiveSession({
+      cwd,
+      homeDir,
+      env: {},
+      prompts,
+      output: { write: (message) => outputs.push(message) },
+      fs: nodeFileSystem,
+      runner: new MockRunner(),
+      launcher,
+    });
+
+    expect(result).toEqual({
+      status: "completed",
+      writtenPaths: [claudePath, codexPath],
+      skillPath: claudePath,
+    });
+    expect(launcher.invocations).toHaveLength(1);
+    expect(await nodeFileSystem.readText(claudePath)).toBe(skillContent);
+    expect(await nodeFileSystem.readText(codexPath)).toBe(skillContent);
+    expect(outputs.some((line) => line.includes(`Wrote ${codexPath}`))).toBe(true);
+  });
+
+  it("cancels when an existing output target overwrite is declined", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "ritual-session-cwd-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "ritual-session-home-"));
+    const historyPath = path.join(homeDir, "history.jsonl");
+    const skillPath = path.join(cwd, ".claude", "skills", "pr-review-workflow", "SKILL.md");
+    await writeFile(
+      historyPath,
+      [
+        JSON.stringify({
+          session_id: "session-1",
+          ts: 1775423768,
+          text: "review dependency updates",
+        }),
+        JSON.stringify({
+          session_id: "session-2",
+          ts: 1775423780,
+          text: "review dependency updates now",
+        }),
+        JSON.stringify({
+          session_id: "session-3",
+          ts: 1775423790,
+          text: "review dependency updates carefully",
+        }),
+      ].join("\n"),
+      "utf8",
+    );
+    await nodeFileSystem.writeTextAtomic(
+      skillPath,
+      "---\nname: pr-review-workflow\n---\nExisting content\n",
+    );
+    const launcher = new MockLauncher(
+      skillPath,
+      [
+        "---",
+        "name: pr-review-workflow",
+        "description: Use when reviewing TypeScript pull requests for correctness and test coverage.",
+        "---",
+        "",
+        "## Workflow",
+        "",
+        "- Inspect the changed files and identify behavior changes.",
+      ].join("\n"),
+    );
+    const outputs: string[] = [];
+    const prompts = new QueuePrompts({
+      confirms: [true, false, false],
+      inputs: [historyPath, "pr-review-workflow"],
+      selects: ["codex", "candidate-1", "project", "claude"],
+      checkboxes: [["claude"]],
+    });
+
+    const result = await runInteractiveSession({
+      cwd,
+      homeDir,
+      env: {},
+      prompts,
+      output: { write: (message) => outputs.push(message) },
+      fs: nodeFileSystem,
+      runner: new MockRunner(),
+      launcher,
+    });
+
+    expect(result).toEqual({
+      status: "cancelled",
+      reason: "Target write was not approved.",
+    });
+    expect(launcher.invocations).toHaveLength(0);
+    expect(await nodeFileSystem.readText(skillPath)).toBe(
+      "---\nname: pr-review-workflow\n---\nExisting content\n",
+    );
+  });
 });
