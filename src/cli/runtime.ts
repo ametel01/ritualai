@@ -6,6 +6,7 @@ import { type PromptDumpOptions, type PromptDumpResult, runPromptDump } from "./
 import { isPromptCancelledError } from "./prompts.js";
 
 const DEFAULT_PROMPT_DUMP_LIMIT = 100;
+let gracefulExitHandlersInstalled = false;
 
 export type CliOutput = {
   stdout(message: string): void;
@@ -141,6 +142,10 @@ export function isDirectEntrypoint(importMetaUrl: string, argv = process.argv): 
 }
 
 function installGracefulExitHandlers(): void {
+  if (gracefulExitHandlersInstalled) {
+    return;
+  }
+  gracefulExitHandlersInstalled = true;
   process.once("SIGINT", () => {
     process.exitCode = 130;
   });

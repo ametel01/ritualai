@@ -226,6 +226,36 @@ describe("cli runtime", () => {
     expect(stdin.unrefCalls).toBe(1);
   });
 
+  it("installs SIGINT/SIGTERM handlers only once across repeated runCli calls", async () => {
+    const baselineSigint = process.listenerCount("SIGINT");
+    const baselineSigterm = process.listenerCount("SIGTERM");
+    const stdin = new FakeStdin();
+
+    await runCli({
+      argv: ["node", "ritual"],
+      stdin,
+      output: { stdout: () => undefined, stderr: () => undefined },
+      setExitCode: () => undefined,
+      async runInteractive(): Promise<SessionResult> {
+        return { status: "cancelled", reason: "done" };
+      },
+    });
+    await runCli({
+      argv: ["node", "ritual"],
+      stdin: new FakeStdin(),
+      output: { stdout: () => undefined, stderr: () => undefined },
+      setExitCode: () => undefined,
+      async runInteractive(): Promise<SessionResult> {
+        return { status: "cancelled", reason: "done" };
+      },
+    });
+
+    const increasedSigint = process.listenerCount("SIGINT") - baselineSigint;
+    const increasedSigterm = process.listenerCount("SIGTERM") - baselineSigterm;
+    expect(increasedSigint).toBeLessThanOrEqual(1);
+    expect(increasedSigterm).toBeLessThanOrEqual(1);
+  });
+
   it("funnels unexpected top-level errors through a stable Ritual message", async () => {
     const stderr: string[] = [];
     const exitCodes: number[] = [];
