@@ -15,6 +15,11 @@ starting, honor its STOP conditions, and update the relevant row when done.
 | 005 | Surface prompt-dump diagnostics | P2 | S | - | DONE |
 | 006 | Show interactive warning diagnostics | P2 | S | - | DONE |
 | 007 | Offer extra history source when defaults exist | P2 | M | - | DONE |
+| 008 | Restore invalid primary skill writes | P1 | M | - | DONE |
+| 009 | Continue history discovery after source errors | P1 | S | - | TODO |
+| 010 | Install runtime signal handlers once | P2 | S | - | TODO |
+| 011 | Enforce selected skill name validation | P2 | S | - | TODO |
+| 012 | Cover release notes extraction | P3 | S | - | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |
 REJECTED (with one-line rationale).
@@ -31,12 +36,23 @@ REJECTED (with one-line rationale).
   command; Plan 006 covers diagnostics in the default interactive flow.
 - Plan 007 is independent. If it lands before Plan 006, make sure any new
   integration tests still account for warning output changes later.
+- Plans 008 and 011 both touch validation-related behavior but are independent:
+  Plan 008 handles cleanup/restore after validation failure, while Plan 011
+  tightens the validation rule for selected skill names.
+- Plan 009 should land before any broader refactor of history discovery because
+  it defines the partial-failure behavior expected from source traversal.
+- Plan 010 is independent and should remove the `MaxListenersExceededWarning`
+  noise observed during the current full Vitest run.
+- Plan 012 is independent test coverage for release-note extraction.
 
 ## Verification Baseline From Recon
 
+- Current post-plan audit was run at commit `0925fb7`.
 - `bun run check` passed at audit time.
 - `bun run typecheck` passed at audit time.
-- `bun run test` passed at audit time: 8 files, 51 tests.
+- `bun run test` passed at audit time: 8 files, 66 tests. The run emitted
+  `MaxListenersExceededWarning` for `SIGINT` and `SIGTERM`; Plan 010 covers this
+  DX issue.
 - `bun audit` reported no vulnerabilities.
 - `bun run build` and `bun run verify` were not run by the advisor because build
   writes `dist/`; executors may run them when their operator allows build
@@ -53,3 +69,7 @@ REJECTED (with one-line rationale).
   matches the release-note/GitHub Release requirement in `docs/TECH_SPEC.md`.
 - Dependency vulnerability sweep: not filed because `bun audit` reported no
   vulnerabilities.
+- Agent discovery structured-result parsing: identified as a product direction
+  option, not an implementation bug. It was not planned in this batch because
+  the request was to turn the five vetted findings into plans; structured
+  discovery parsing should be handled as a separate design/spike if selected.

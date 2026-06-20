@@ -183,6 +183,10 @@ export async function runInteractiveSession(
   output.write(`Skill path: ${primaryTarget.skillPath}`);
   output.write(`Agent command: ${invocationPreview} <generated skill prompt>`);
 
+  const originalPrimaryTargetContent = primaryTarget.exists
+    ? await fs.readText(primaryTarget.skillPath)
+    : undefined;
+
   const exitCode = await launchSkillDraftAgent({
     request: { candidate, skillName, scope, ecosystems },
     executable,
@@ -207,6 +211,13 @@ export async function runInteractiveSession(
     output.write(`[warning] ${warning.message}`);
   }
   if (validation.errors.length > 0) {
+    if (primaryTarget.exists) {
+      if (originalPrimaryTargetContent !== undefined) {
+        await fs.writeTextAtomic(primaryTarget.skillPath, originalPrimaryTargetContent);
+      }
+    } else {
+      await fs.removeDir(primaryTarget.skillDir);
+    }
     return { status: "cancelled", reason: "Skill validation failed." };
   }
 

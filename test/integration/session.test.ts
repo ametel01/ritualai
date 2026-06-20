@@ -421,6 +421,131 @@ describe("interactive session", () => {
     await expect(access(warningLauncher.skillPath)).resolves.toBeUndefined();
   });
 
+  it("removes a newly written invalid primary target on validation failure", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "ritual-session-cwd-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "ritual-session-home-"));
+    const historyPath = path.join(homeDir, "history.jsonl");
+    await writeFile(
+      historyPath,
+      [
+        JSON.stringify({
+          session_id: "session-1",
+          ts: 1775423768,
+          text: "review dependency updates in changelog and patch files",
+        }),
+        JSON.stringify({
+          session_id: "session-2",
+          ts: 1775423780,
+          text: "review dependency updates in changelog and patch files now",
+        }),
+        JSON.stringify({
+          session_id: "session-3",
+          ts: 1775423790,
+          text: "review dependency updates in changelog and patch files carefully",
+        }),
+      ].join("\n"),
+      "utf8",
+    );
+
+    const primaryPath = path.join(cwd, ".claude", "skills", "pr-review-workflow", "SKILL.md");
+    const invalidLauncher = new MockLauncher(primaryPath, "TODO");
+    const outputs: string[] = [];
+    const prompts = new QueuePrompts({
+      confirms: [true, false],
+      inputs: [historyPath, "pr-review-workflow"],
+      selects: ["codex", "candidate-1", "project", "claude"],
+      checkboxes: [["claude"]],
+    });
+
+    const result = await runInteractiveSession({
+      cwd,
+      homeDir,
+      env: {},
+      prompts,
+      output: { write: (message) => outputs.push(message) },
+      fs: nodeFileSystem,
+      runner: new MockRunner(),
+      launcher: invalidLauncher,
+    });
+
+    expect(result).toEqual({
+      status: "cancelled",
+      reason: "Skill validation failed.",
+    });
+    expect(invalidLauncher.invocations).toHaveLength(1);
+    await expect(access(primaryPath)).rejects.toThrow();
+    expect(outputs.some((line) => line.includes("[error]"))).toBe(true);
+  });
+
+  it("restores an invalid overwritten primary target after validation failure", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "ritual-session-cwd-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "ritual-session-home-"));
+    const historyPath = path.join(homeDir, "history.jsonl");
+    await writeFile(
+      historyPath,
+      [
+        JSON.stringify({
+          session_id: "session-1",
+          ts: 1775423768,
+          text: "review dependency updates in changelog and patch files",
+        }),
+        JSON.stringify({
+          session_id: "session-2",
+          ts: 1775423780,
+          text: "review dependency updates in changelog and patch files now",
+        }),
+        JSON.stringify({
+          session_id: "session-3",
+          ts: 1775423790,
+          text: "review dependency updates in changelog and patch files carefully",
+        }),
+      ].join("\n"),
+      "utf8",
+    );
+
+    const skillPath = path.join(cwd, ".claude", "skills", "pr-review-workflow", "SKILL.md");
+    const originalContent = "---\nname: pr-review-workflow\n---\nKeep this content.\n";
+    await nodeFileSystem.writeTextAtomic(skillPath, originalContent);
+
+    const invalidOverwriteLauncher = new MockLauncher(
+      skillPath,
+      [
+        "---",
+        "name: invalid-name",
+        "description: Do not install a mismatched skill.",
+        "---",
+        "",
+        "This content is invalid for this plan.",
+      ].join("\n"),
+    );
+    const outputs: string[] = [];
+    const prompts = new QueuePrompts({
+      confirms: [true, false, true],
+      inputs: [historyPath, "pr-review-workflow"],
+      selects: ["codex", "candidate-1", "project", "claude"],
+      checkboxes: [["claude"]],
+    });
+
+    const result = await runInteractiveSession({
+      cwd,
+      homeDir,
+      env: {},
+      prompts,
+      output: { write: (message) => outputs.push(message) },
+      fs: nodeFileSystem,
+      runner: new MockRunner(),
+      launcher: invalidOverwriteLauncher,
+    });
+
+    expect(result).toEqual({
+      status: "cancelled",
+      reason: "Skill validation failed.",
+    });
+    expect(invalidOverwriteLauncher.invocations).toHaveLength(1);
+    await expect(nodeFileSystem.readText(skillPath)).resolves.toBe(originalContent);
+    expect(outputs.some((line) => line.includes("[error]"))).toBe(true);
+  });
+
   it("mirrors generated skills to all selected output ecosystems", async () => {
     const cwd = await mkdtemp(path.join(os.tmpdir(), "ritual-session-cwd-"));
     const homeDir = await mkdtemp(path.join(os.tmpdir(), "ritual-session-home-"));
