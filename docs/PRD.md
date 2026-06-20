@@ -39,7 +39,7 @@ Existing history tools help users inspect what happened. Existing skill generato
 - Scan local Claude and Codex history sources.
 - Extract user prompts only.
 - Let a user-selected local agent inspect discovered session/history paths for skill candidates.
-- Parse structured agent findings back into the CLI.
+- In MVP, keep discovery output in the selected local agent window (same-window handoff); do not parse structured findings back into the Ritual CLI.
 - Fall back to local clustering and ranking by recurrence, coherence, and likely usefulness.
 - Present top candidates interactively.
 - Let the user approve, rename, or reject candidates.
@@ -261,7 +261,7 @@ Warnings:
 - Given local Claude and Codex history sources, Ritual extracts user prompts without assistant content.
 - Given one unsupported or malformed source, Ritual reports diagnostics and continues with any supported sources.
 - Given a selected local discovery agent, Ritual hands it session/history paths and the agent presents a Markdown table in its own window.
-- Given agent discovery findings, the agent adds an opinionated suggestion and asks which skill or skills to implement.
+- Given a discovery table produced in the same agent window, the agent adds an opinionated suggestion and asks which skill or skills to implement before returning.
 - Given declined, unavailable, or failed agent discovery, Ritual clusters repeated prompts locally and presents fallback candidates.
 - Given no strong candidate, Ritual shows near-misses and does not generate by default.
 - Given an approved candidate, Ritual can invoke `claude` or `codex` locally to create a high-quality draft skill using the embedded skill-generation prompt.

@@ -263,6 +263,8 @@ Rules:
 - Tell the agent to ask whether selected skills should be installed project-local to the current command path or global under the user's home directory, showing concrete target paths for both choices.
 - Fall back to local clustering and ranking when discovery is declined, unavailable, or exits unsuccessfully.
 
+In the MVP, Ritual reports a `handed-off` result after launching discovery; it does not parse the discovery table back into its own prompt UI.
+
 The discovery table must include:
 
 - lowercase hyphen-case suggested name

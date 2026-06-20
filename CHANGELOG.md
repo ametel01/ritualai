@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Filter injected runtime context that was previously bypassing the final reusable prompt boundary for plain string history content and prompt-history text values.
 - Make CLI stdin guarding idempotent across repeated `runCli` calls and avoid double stdin unref on help.
 - Bound history discovery and scanning with deterministic caps and warning diagnostics for truncated roots or oversized files.
+- Align the agent-discovery contract documentation with the current same-window handoff model in MVP.
 
 ## [0.3.1] - 2026-06-20
 
