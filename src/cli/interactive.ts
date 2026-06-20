@@ -203,7 +203,12 @@ export async function runInteractiveSession(
   }
   output.write(`Skill written to ${primaryTarget.skillPath}`);
 
-  const validation = await validateSkillDraft({ draftDir: primaryTarget.skillDir, fs, runner });
+  const validation = await validateSkillDraft({
+    draftDir: primaryTarget.skillDir,
+    fs,
+    runner,
+    expectedName: skillName,
+  });
   for (const error of validation.errors) {
     output.write(`[error] ${error.message}`);
   }

@@ -33,6 +33,7 @@ export async function validateSkillDraft(options: {
   fs: FileSystem;
   runner?: CommandRunner;
   bodyLengthWarning?: number;
+  expectedName?: string;
 }): Promise<SkillValidationResult> {
   const errors: ValidationIssue[] = [];
   const warnings: ValidationIssue[] = [];
@@ -75,6 +76,11 @@ export async function validateSkillDraft(options: {
     errors.push({ code: "missing-name", message: "Frontmatter is missing name." });
   } else if (!isSafeSkillName(name)) {
     errors.push({ code: "invalid-name", message: "Skill name must be lowercase hyphen-case." });
+  } else if (options.expectedName !== undefined && name.trim() !== options.expectedName) {
+    errors.push({
+      code: "name-mismatch",
+      message: "Skill name must match the selected target name.",
+    });
   }
 
   if (description === undefined || description.trim().length === 0) {

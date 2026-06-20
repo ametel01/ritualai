@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Ask for extra history sources even when defaults are already discovered, and merge extra scans without dropping defaults.
 - Continue history discovery when one source directory cannot be traversed.
 - Install SIGINT/SIGTERM handlers only once in the CLI runtime.
+- Enforce selected skill name validation so generated `SKILL.md` names must match the chosen skill target.
 - Restore invalid primary skill writes by removing newly created targets or restoring overwritten targets after validation failure.
 
 ## [0.3.0] - 2026-06-20

@@ -254,10 +254,43 @@ describe("skill validation", () => {
       ].join("\n"),
     );
 
-    const result = await validateSkillDraft({ draftDir, fs: nodeFileSystem });
+    const result = await validateSkillDraft({
+      draftDir,
+      fs: nodeFileSystem,
+      expectedName: "review-pr",
+    });
 
     expect(result.errors).toEqual([]);
     expect(result.agnixAvailable).toBe(false);
+  });
+
+  it("enforces the selected skill name in validation", async () => {
+    const draftDir = await mkdtemp(path.join(os.tmpdir(), "ritual-name-match-"));
+    await writeFile(
+      path.join(draftDir, "SKILL.md"),
+      [
+        "---",
+        "name: other-skill",
+        "description: Use when reviewing TypeScript pull requests for correctness and test coverage.",
+        "---",
+        "",
+        "## Workflow",
+        "",
+        "- Inspect the diff and identify behavior changes.",
+        "- Check tests and CI commands before recommending fixes.",
+      ].join("\n"),
+    );
+
+    const result = await validateSkillDraft({
+      draftDir,
+      fs: nodeFileSystem,
+      expectedName: "review-pr",
+    });
+
+    expect(result.errors.map((error) => error.code)).toContain("name-mismatch");
+    expect(result.errors.find((error) => error.code === "name-mismatch")).toMatchObject({
+      code: "name-mismatch",
+    });
   });
 
   it("blocks missing frontmatter and placeholder bodies", async () => {
