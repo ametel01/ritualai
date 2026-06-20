@@ -13,7 +13,7 @@ starting, honor its STOP conditions, and update the relevant row when done.
 | 003 | Cover the fallback write and mirror path | P1 | M | - | DONE |
 | 004 | Implement real CLI help output | P2 | S | - | DONE |
 | 005 | Surface prompt-dump diagnostics | P2 | S | - | DONE |
-| 006 | Show interactive warning diagnostics | P2 | S | - | TODO |
+| 006 | Show interactive warning diagnostics | P2 | S | - | DONE |
 | 007 | Offer extra history source when defaults exist | P2 | M | - | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) |

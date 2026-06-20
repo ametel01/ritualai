@@ -250,6 +250,48 @@ describe("interactive session", () => {
     await expect(access(path.join(cwd, ".ritual"))).rejects.toThrow();
   });
 
+  it("surfaces malformed history diagnostics during interactive prompts", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "ritual-session-cwd-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "ritual-session-home-"));
+    const historyPath = path.join(homeDir, "history.jsonl");
+    await writeFile(
+      historyPath,
+      [JSON.stringify({ session_id: "one", ts: 1775423768, text: "review dependency updates" }), "not-json"].join(
+        "\n",
+      ),
+      "utf8",
+    );
+
+    const outputs: string[] = [];
+    const prompts = new QueuePrompts({
+      confirms: [true, false, false],
+      inputs: [historyPath],
+      selects: ["codex"],
+      checkboxes: [],
+    });
+
+    const result = await runInteractiveSession({
+      cwd,
+      homeDir,
+      env: {},
+      prompts,
+      output: { write: (message) => outputs.push(message) },
+      fs: nodeFileSystem,
+      runner: new MockRunner(),
+      launcher: new MockLauncher(path.join(cwd, ".tmp", "SKILL.md")),
+    });
+
+    expect(result).toEqual({
+      status: "cancelled",
+      reason: "No candidate was approved.",
+    });
+    expect(outputs.some((line) => line.includes("[warning]"))).toBe(true);
+    expect(outputs.join("\n")).toContain("Malformed JSON record at line 2.");
+    expect(outputs.some((line) => line.includes("No user prompts were extracted from supported history"))).toBe(
+      false,
+    );
+  });
+
   it("continues local fallback on validation warnings and writes the generated SKILL.md", async () => {
     const cwd = await mkdtemp(path.join(os.tmpdir(), "ritual-session-cwd-"));
     const homeDir = await mkdtemp(path.join(os.tmpdir(), "ritual-session-home-"));

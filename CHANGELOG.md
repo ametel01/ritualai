@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add integration coverage for local fallback generation, ecosystem mirroring, single-target writes, and overwrite-denial.
 - Add CLI help output for `--help`, `-h`, and `help`.
 - Emit prompt-dump source summaries and non-info diagnostics to stderr, keeping prompt rows on stdout.
+- Show interactive history warning diagnostics from discovery and scanning so malformed records and skipped files are visible before ranking.
 
 ## [0.3.0] - 2026-06-20
 
