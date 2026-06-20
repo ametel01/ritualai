@@ -52,6 +52,11 @@ export async function runCli(options: RunCliOptions = {}): Promise<void> {
   }
 
   try {
+    if (command.kind === "help") {
+      output.stdout(formatHelp());
+      unrefStdin(stdin);
+      return;
+    }
     if (command.kind === "prompts") {
       await (options.runPromptDump ?? runPromptDump)({
         cwd: process.cwd(),
@@ -80,11 +85,15 @@ export function normalizeHelpInvocation(args: readonly string[]): string[] {
 type CliCommand =
   | { kind: "interactive" }
   | { kind: "prompts"; limit: number }
+  | { kind: "help" }
   | { kind: "error"; message: string };
 
 function parseCliCommand(args: readonly string[]): CliCommand {
   if (args.length === 0) {
     return { kind: "interactive" };
+  }
+  if (args[0] === "--help" || args[0] === "-h") {
+    return { kind: "help" };
   }
   if (args[0] !== "prompts" && args[0] !== "--prompts") {
     return { kind: "error", message: "Usage: ritual [prompts|--prompts [--limit N]]" };
@@ -110,6 +119,16 @@ function parseCliCommand(args: readonly string[]): CliCommand {
   }
 
   return { kind: "prompts", limit };
+}
+
+export function formatHelp(): string {
+  return [
+    "Usage: ritual [prompts|--prompts [--limit N]]",
+    "ritual",
+    "ritual prompts --limit 25",
+    "",
+    "Run `ritual` to start interactive skill-generation flow.",
+  ].join("\n");
 }
 
 export function isDirectEntrypoint(importMetaUrl: string, argv = process.argv): boolean {

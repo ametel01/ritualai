@@ -10,6 +10,7 @@ Published usage:
 
 ```bash
 npx ritualai@latest
+npx ritualai@latest --help
 ```
 
 Dump the latest 100 extracted user prompts, newest first:

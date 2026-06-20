@@ -7,6 +7,7 @@ import type { SessionResult } from "../../src/cli/interactive.js";
 import type { PromptDumpOptions, PromptDumpResult } from "../../src/cli/prompt-dump.js";
 import { PromptCancelledError } from "../../src/cli/prompts.js";
 import {
+  formatHelp,
   isDirectEntrypoint,
   normalizeHelpInvocation,
   type RuntimeStdin,
@@ -59,6 +60,51 @@ describe("cli runtime", () => {
     expect(stdin.unrefCalls).toBe(1);
     expect(stderr).toEqual(["Usage: ritual [prompts|--prompts [--limit N]]"]);
     expect(exitCodes).toEqual([1]);
+  });
+
+  it("prints help for --help and exits successfully without running other commands", async () => {
+    const stdout: string[] = [];
+    const exitCodes: number[] = [];
+    const called: string[] = [];
+    const stdin = new FakeStdin();
+
+    await runCli({
+      argv: ["node", "ritual", "--help"],
+      stdin,
+      output: { stdout: (message) => stdout.push(message), stderr: () => undefined },
+      setExitCode: (code) => exitCodes.push(code),
+      async runInteractive(): Promise<SessionResult> {
+        called.push("interactive");
+        throw new Error("interactive session should not run");
+      },
+      async runPromptDump(): Promise<PromptDumpResult> {
+        called.push("prompt-dump");
+        throw new Error("prompt dump should not run");
+      },
+    });
+
+    expect(stdout).toContain(formatHelp());
+    expect(called).toEqual([]);
+    expect(exitCodes).toEqual([]);
+    expect(stdin.unrefCalls).toBe(2);
+  });
+
+  it("prints help for normalized bare help", async () => {
+    const stdout: string[] = [];
+    await runCli({
+      argv: ["node", "ritual", "help"],
+      stdin: new FakeStdin(),
+      output: { stdout: (message) => stdout.push(message), stderr: () => undefined },
+      setExitCode: () => undefined,
+      async runInteractive(): Promise<SessionResult> {
+        throw new Error("interactive session should not run");
+      },
+      async runPromptDump(): Promise<PromptDumpResult> {
+        throw new Error("prompt dump should not run");
+      },
+    });
+
+    expect(stdout).toContain(formatHelp());
   });
 
   it("runs the prompt dump command with the default limit", async () => {
