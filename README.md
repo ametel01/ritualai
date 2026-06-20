@@ -9,20 +9,20 @@ a reusable `SKILL.md`.
 Published usage:
 
 ```bash
-bunx ritualai@latest
+npx ritualai@latest
 ```
 
 Dump the latest 100 extracted user prompts, newest first:
 
 ```bash
-bunx ritualai@latest prompts
-bunx ritualai@latest --prompts
+npx ritualai@latest prompts
+npx ritualai@latest --prompts
 ```
 
 Use a different prompt count:
 
 ```bash
-bunx ritualai@latest prompts --limit 25
+npx ritualai@latest prompts --limit 25
 ```
 
 Local development usage:
