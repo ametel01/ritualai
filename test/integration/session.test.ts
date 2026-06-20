@@ -1,4 +1,4 @@
-import { access, mkdtemp, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -256,9 +256,10 @@ describe("interactive session", () => {
     const historyPath = path.join(homeDir, "history.jsonl");
     await writeFile(
       historyPath,
-      [JSON.stringify({ session_id: "one", ts: 1775423768, text: "review dependency updates" }), "not-json"].join(
-        "\n",
-      ),
+      [
+        JSON.stringify({ session_id: "one", ts: 1775423768, text: "review dependency updates" }),
+        "not-json",
+      ].join("\n"),
       "utf8",
     );
 
@@ -287,9 +288,63 @@ describe("interactive session", () => {
     });
     expect(outputs.some((line) => line.includes("[warning]"))).toBe(true);
     expect(outputs.join("\n")).toContain("Malformed JSON record at line 2.");
-    expect(outputs.some((line) => line.includes("No user prompts were extracted from supported history"))).toBe(
-      false,
+    expect(
+      outputs.some((line) =>
+        line.includes("No user prompts were extracted from supported history"),
+      ),
+    ).toBe(false);
+  });
+
+  it("offers an extra history source even when defaults were discovered", async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), "ritual-session-cwd-"));
+    const homeDir = await mkdtemp(path.join(os.tmpdir(), "ritual-session-home-"));
+    const defaultHistoryPath = path.join(homeDir, ".codex", "history.jsonl");
+    await mkdir(path.join(homeDir, ".codex"), { recursive: true });
+    await writeFile(
+      defaultHistoryPath,
+      JSON.stringify({
+        session_id: "default",
+        text: "inspect changed files with local tooling",
+        ts: 1775423768,
+      }),
+      "utf8",
     );
+    const extraHistoryPath = path.join(cwd, "extra-history.jsonl");
+    await writeFile(
+      extraHistoryPath,
+      JSON.stringify({
+        session_id: "extra",
+        text: "review dependency updates and check package scripts",
+        ts: 1775423769,
+      }),
+      "utf8",
+    );
+
+    const outputs: string[] = [];
+    const prompts = new QueuePrompts({
+      confirms: [true, false, false],
+      inputs: [extraHistoryPath],
+      selects: ["codex"],
+      checkboxes: [],
+    });
+
+    const result = await runInteractiveSession({
+      cwd,
+      homeDir,
+      env: {},
+      prompts,
+      output: { write: (message) => outputs.push(message) },
+      fs: nodeFileSystem,
+      runner: new MockRunner(),
+      launcher: new MockLauncher(path.join(cwd, ".tmp", "SKILL.md")),
+    });
+
+    expect(result).toEqual({ status: "cancelled", reason: "No candidate was approved." });
+    expect(
+      outputs.some((line) =>
+        line.includes("Scanned 2 codex history files and found 2 user prompts."),
+      ),
+    ).toBe(true);
   });
 
   it("continues local fallback on validation warnings and writes the generated SKILL.md", async () => {

@@ -76,16 +76,22 @@ export async function runInteractiveSession(
   const discovered = await withSpinner(spinner, "Finding local history sources...", () =>
     discoverHistorySources({ cwd, homeDir, env }),
   );
-  let sources = discovered.sources;
-  if (sources.length === 0) {
-    const extraSources = await askForExtraSources(prompts);
-    if (extraSources.length > 0) {
-      const withExtra = await withSpinner(spinner, "Finding extra history sources...", () =>
-        discoverHistorySources({ cwd, homeDir, env, extraSources }),
-      );
-      sources = withExtra.sources;
-      discovered.diagnostics.push(...withExtra.diagnostics);
+  const sources = discovered.sources;
+  const extraSources = await askForExtraSources(prompts);
+  if (extraSources.length > 0) {
+    const withExtra = await withSpinner(spinner, "Finding extra history sources...", () =>
+      discoverHistorySources({ cwd, homeDir, env, extraSources }),
+    );
+    const seenSources = new Set(sources.map((source) => `${source.kind}:${source.path}`));
+    for (const source of withExtra.sources) {
+      const key = `${source.kind}:${source.path}`;
+      if (seenSources.has(key)) {
+        continue;
+      }
+      sources.push(source);
+      seenSources.add(key);
     }
+    discovered.diagnostics.push(...withExtra.diagnostics);
   }
 
   for (const line of formatDiagnostics(discovered.diagnostics.filter(isVisibleDiagnostic))) {

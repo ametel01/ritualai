@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add CLI help output for `--help`, `-h`, and `help`.
 - Emit prompt-dump source summaries and non-info diagnostics to stderr, keeping prompt rows on stdout.
 - Show interactive history warning diagnostics from discovery and scanning so malformed records and skipped files are visible before ranking.
+- Ask for extra history sources even when defaults are already discovered, and merge extra scans without dropping defaults.
 
 ## [0.3.0] - 2026-06-20
 
