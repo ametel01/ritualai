@@ -70,19 +70,10 @@ Existing history tools help users inspect what happened. Existing skill generato
 3. Ritual reports source-level diagnostics, including how many prompts were extracted from each source.
 4. Ritual extracts only user-authored prompts.
 5. Ritual asks whether a local agent should inspect the discovered session/history paths for skill candidates.
-6. The selected local agent reads those paths and writes structured candidate findings back to Ritual.
-7. Ritual presents the findings inside the same CLI session.
-8. If agent discovery is declined, unavailable, fails, or returns no usable findings, Ritual falls back to local normalization, clustering, and ranking.
-9. The user opens candidate details and reviews representative examples.
-10. The user can approve, rename, or reject candidates.
-11. Ritual recommends whether the selected candidate appears project-specific or global.
-12. The user chooses project-local or global skill scope.
-13. The user chooses Claude, Codex/agents, or both output ecosystems.
-14. Ritual calls a local agent executable to write a skill for the approved candidate.
-15. The selected agent writes the `SKILL.md` directly to the first selected target path.
-16. Ritual validates the written skill and blocks on structural errors.
-17. Ritual mirrors the same `SKILL.md` to any additional selected target paths.
-18. Ritual prints the final paths.
+6. The selected local agent opens in the terminal and reads those paths.
+7. The agent presents a Markdown candidate table, gives an opinionated recommendation, and asks which skill or skills the user wants to implement.
+8. The agent continues implementation in the same window after the user answers.
+9. If agent discovery is declined, unavailable, or exits unsuccessfully, Ritual falls back to local normalization, clustering, and ranking.
 
 ## Functional Requirements
 
@@ -143,11 +134,15 @@ Existing history tools help users inspect what happened. Existing skill generato
 
 - Let the user choose whether a local agent should inspect discovered session/history paths.
 - Pass session/history paths to the selected local agent rather than a preselected prompt cluster.
-- Require the discovery agent to produce structured findings only.
+- Tell the discovery agent to inspect existing project/global Claude and Codex/agents skill directories before returning findings.
+- Suppress workflows already covered by existing skills, and keep partially covered workflows only when the missing behavior is substantial.
+- Require the discovery agent to present a Markdown candidate table in its own window.
 - Require findings to include suggested name, summary, rationale, confidence, suggested scope, representative generalized prompts, and source paths.
-- Read the findings back into Ritual and present them inside the same CLI session.
-- Do not let the discovery agent ask the user questions or create skill files.
-- Fall back to local clustering and ranking when agent discovery is declined, unavailable, fails, or returns no usable findings.
+- Require an opinionated recommendation before asking which skill or skills the user wants to implement.
+- Let the agent ask the user which skill or skills to implement and continue in the same window.
+- Before writing any selected skill, require the agent to ask whether to install project-local to the current command path or global under the user's home directory, showing concrete target paths for both choices.
+- Do not let the discovery agent write files before the user approves an implementation choice.
+- Fall back to local clustering and ranking when agent discovery is declined, unavailable, or exits unsuccessfully.
 
 ### Interactive Review
 
@@ -249,7 +244,7 @@ Warnings:
 - Do not upload history by default.
 - Extract and process history locally.
 - Keep scan and fallback cluster results ephemeral by default.
-- Store agent discovery reports under `.ritual/sessions/` only after the user chooses agent discovery.
+- Do not persist agent discovery findings.
 - Make agent invocation explicit because discovery and drafting may use external model services through the user's local agent configuration.
 
 ## Success Metrics
@@ -265,9 +260,9 @@ Warnings:
 
 - Given local Claude and Codex history sources, Ritual extracts user prompts without assistant content.
 - Given one unsupported or malformed source, Ritual reports diagnostics and continues with any supported sources.
-- Given a selected local discovery agent, Ritual hands it session/history paths and reads structured findings back into the same CLI session.
-- Given agent discovery findings, Ritual presents candidates interactively before skill generation.
-- Given declined, unavailable, failed, or empty agent discovery, Ritual clusters repeated prompts locally and presents fallback candidates.
+- Given a selected local discovery agent, Ritual hands it session/history paths and the agent presents a Markdown table in its own window.
+- Given agent discovery findings, the agent adds an opinionated suggestion and asks which skill or skills to implement.
+- Given declined, unavailable, or failed agent discovery, Ritual clusters repeated prompts locally and presents fallback candidates.
 - Given no strong candidate, Ritual shows near-misses and does not generate by default.
 - Given an approved candidate, Ritual can invoke `claude` or `codex` locally to create a high-quality draft skill using the embedded skill-generation prompt.
 - Given a draft skill, Ritual blocks writes on structural validation failures.

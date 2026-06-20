@@ -79,13 +79,12 @@ Running without arguments must run the complete guided flow:
 2. Show source diagnostics and extraction counts.
 3. Extract user prompts only.
 4. Ask whether to use a local agent to inspect the discovered session/history paths for skill candidates.
-5. Launch the selected local agent with an analysis-only discovery template.
-6. Require the discovery agent to write structured JSON findings under `.ritual/sessions/`.
-7. Read the findings back into the same CLI session.
-8. Fall back to local normalization, clustering, and ranking when agent discovery is declined, unavailable, fails, or returns no usable candidates.
-9. Remove candidates already covered by existing project-local or global skills.
-10. Present candidates interactively.
-11. Let the user inspect, rename, approve, or reject candidates.
+5. Launch the selected local agent as an inherited terminal session with discovery and implementation instructions.
+6. Require the discovery agent to present a Markdown table, give an opinionated recommendation, and ask which skill or skills to implement in that same agent window.
+7. Fall back to local normalization, clustering, and ranking when agent discovery is declined, unavailable, or exits unsuccessfully.
+8. Remove candidates already covered by existing project-local or global skills.
+9. Present fallback candidates interactively.
+10. Let the user inspect, rename, approve, or reject fallback candidates.
 12. Recommend project-local or global scope.
 13. Ask the user to choose scope.
 14. Ask the user to choose Claude, Codex/agents, or both.
@@ -198,7 +197,7 @@ Required unit coverage:
 - Scope recommendation.
 - Skill name sanitization.
 - Target path resolution.
-- Agent discovery handoff prompt and report parsing.
+- Agent discovery handoff prompt.
 - `SKILL.md` validation.
 - Overwrite protection.
 
@@ -251,14 +250,20 @@ Rules:
 
 - Pass discovered Claude and Codex session/history paths to the selected local agent.
 - Use an embedded, versioned analysis-only template.
-- Tell the agent not to create `SKILL.md` files, ask user questions, or modify history files.
-- Require the agent to write one JSON object under `.ritual/sessions/`.
-- Parse the JSON as untrusted input.
-- Present parsed findings inside the same Ritual CLI session.
-- Let the user reject all findings without starting skill generation.
-- Fall back to local clustering and ranking when discovery is declined, unavailable, fails, or returns no usable candidates.
+- State that the command working directory is informational only and does not affect candidate quality.
+- Tell the agent to review only the listed stored session/history paths.
+- Tell the agent to inspect existing project/global Claude and Codex/agents skill directories before returning findings.
+- Tell the agent to suppress workflows already covered by existing skills, and keep partially covered workflows only when the missing behavior is substantial.
+- Tell the agent not to inspect the repository, source tree, shell history, home directory, dotfiles, environment files, or other host-machine files beyond the listed sessions and existing skill directories.
+- Tell the agent not to create files during discovery or modify history files.
+- Require the agent to present a Markdown table in the inherited terminal session.
+- Tell the agent to order rows by its opinionated recommendation, strongest candidate first.
+- Tell the agent to give an opinionated top suggestion after the table.
+- Tell the agent to ask which skill or skills the user wants to implement and wait for the answer before creating files.
+- Tell the agent to ask whether selected skills should be installed project-local to the current command path or global under the user's home directory, showing concrete target paths for both choices.
+- Fall back to local clustering and ranking when discovery is declined, unavailable, or exits unsuccessfully.
 
-Discovery JSON must contain a `candidates` array. Each candidate should include:
+The discovery table must include:
 
 - lowercase hyphen-case suggested name
 - summary

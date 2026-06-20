@@ -42,16 +42,10 @@ Running without arguments starts the interactive skill-generation flow.
 1. Discovers supported Claude and Codex history files.
 2. Extracts user-authored prompts only for diagnostics and local fallback ranking.
 3. Asks whether a local agent should inspect the discovered session/history paths for skill candidates.
-4. Opens the selected agent in the current terminal with an analysis-only discovery prompt.
-5. Reads the agent's structured findings back into the same CLI session.
-6. Lets the user choose one finding, or falls back to local repeated-workflow ranking when agent discovery is declined, unavailable, or unsuccessful.
-7. Recommends project-local or global skill scope.
-8. Lets the user choose Claude, Codex/agents, or both output ecosystems.
-9. Lets the user choose Claude Code or Codex for local skill generation.
-10. Opens the selected agent in the current terminal with the generated skill prompt.
-11. Writes the skill directly to the first selected target path.
-12. Validates the written skill with built-in checks and optional `agnix`.
-13. Mirrors the same approved `SKILL.md` to any additional selected targets.
+4. Opens the selected agent in the current terminal with the discovered paths and discovery instructions.
+5. The agent reviews the listed sessions, presents a Markdown table, gives an opinionated recommendation, and asks which skill or skills to implement.
+6. The agent continues in that same window after the user answers.
+7. Ritual falls back to local repeated-workflow ranking only when agent discovery is declined, unavailable, or exits unsuccessfully.
 
 The `prompts` command skips candidate ranking and writes raw extracted user
 prompts to stdout as tab-separated `createdAt`, source, and prompt text fields.
@@ -62,8 +56,15 @@ History discovery, extraction, and fallback ranking are local-only. Ritual does
 not upload history itself. Agent discovery and skill generation use a local
 `claude` or `codex` executable only after the user chooses it, because those tools
 may call external services depending on the user's configuration. The discovery
-agent receives local session/history paths and writes structured findings under
-`.ritual/sessions/`.
+agent receives local session/history paths and interacts with the user in the
+agent window. It must not write files during discovery. The command's working
+directory is not part of discovery input; the discovery agent is instructed to
+review only the listed stored sessions/history files and not inspect the
+repository or other host-machine files during discovery, except for existing
+project/global skill directories so already-covered workflows can be suppressed.
+Before writing any selected skill, the agent must ask whether to install it
+project-local to the current command path or globally under the user's home
+directory, showing the concrete target paths for both choices.
 
 Tests use fixtures and temporary directories. They do not read real Claude or Codex
 history.

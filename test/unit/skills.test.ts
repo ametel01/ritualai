@@ -3,16 +3,20 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { ExtractedPrompt } from "../../src/history/types.js";
 import {
-  agentDiscoveryReportPath,
   buildAgentDiscoveryHandoffPrompt,
-  parseAgentDiscoveryReport,
+  launchAgentDiscoverySession,
 } from "../../src/skills/agent-discovery.js";
 import { buildDraftInvocation, detectDraftExecutables } from "../../src/skills/draft.js";
 import { filterCoveredCandidates } from "../../src/skills/duplicates.js";
 import { buildGenerationHandoffPrompt } from "../../src/skills/generation-template.js";
 import { resolveSkillTargets, sanitizeSkillName } from "../../src/skills/paths.js";
 import { validateSkillDraft } from "../../src/skills/validate.js";
-import type { CommandInvocation, CommandResult, CommandRunner } from "../../src/system/exec.js";
+import type {
+  CommandInvocation,
+  CommandLauncher,
+  CommandResult,
+  CommandRunner,
+} from "../../src/system/exec.js";
 import { nodeFileSystem } from "../../src/system/filesystem.js";
 
 function prompt(id: string, text: string): ExtractedPrompt {
@@ -152,57 +156,82 @@ describe("skill draft executables", () => {
 });
 
 describe("agent discovery", () => {
-  it("builds a handoff prompt that asks the agent to write structured findings", () => {
+  it("builds a handoff prompt that keeps discovery inside the agent window", () => {
     const prompt = buildAgentDiscoveryHandoffPrompt({
       cwd: "/repo",
-      reportPath: "/repo/.ritual/sessions/agent-discovery.json",
       sources: [{ kind: "codex", path: "/home/user/.codex/sessions/session.jsonl" }],
     });
 
-    expect(prompt).toContain("Analyze local recorded Claude and Codex sessions");
-    expect(prompt).toContain("[codex] /home/user/.codex/sessions/session.jsonl");
-    expect(prompt).toContain("Report path:");
-    expect(prompt).toContain("/repo/.ritual/sessions/agent-discovery.json");
-    expect(prompt).toContain('"candidates"');
-    expect(prompt).toContain("Do not create any SKILL.md files.");
-  });
-
-  it("parses agent discovery findings into workflow candidates", () => {
-    const result = parseAgentDiscoveryReport(
-      JSON.stringify({
-        candidates: [
-          {
-            name: "Review PR Workflow!",
-            summary: "Review pull requests for correctness and test coverage.",
-            rationale: "Several sessions asked for the same review workflow.",
-            confidence: "high",
-            scope: "project",
-            representativePrompts: [
-              "Review this TypeScript PR for correctness bugs and missing tests.",
-            ],
-            sourcePaths: ["/history.jsonl"],
-            repeatCount: 4,
-          },
-        ],
-      }),
-      [{ kind: "codex", path: "/history.jsonl" }],
+    expect(prompt).toContain("You are running inside the user's selected local agent window.");
+    expect(prompt).toContain(
+      "The purpose of this tool is to mine stored agent sessions for reusable workflow patterns",
     );
-
-    expect(result.warnings).toEqual([]);
-    expect(result.candidates[0]).toMatchObject({
-      id: "agent-candidate-1",
-      name: "review-pr-workflow",
-      count: 4,
-      discoverySource: "agent",
-      confidence: "high",
-      recommendedScope: "project",
-    });
-    expect(result.candidates[0]?.representativePrompts[0]?.text).toContain("TypeScript PR");
+    expect(prompt).toContain(
+      "Where this command is run from does not matter for candidate quality",
+    );
+    expect(prompt).toContain("Read only the listed recorded session/history paths.");
+    expect(prompt).toContain(
+      "Do not inspect the repository, source tree, shell history, home directory, dotfiles, environment files, or any other host-machine files",
+    );
+    expect(prompt).toContain("[codex] /home/user/.codex/sessions/session.jsonl");
+    expect(prompt).toContain("Existing skill directories to check before proposing candidates:");
+    expect(prompt).toContain("[project Claude] /repo/.claude/skills");
+    expect(prompt).toContain("[project Codex/agents] /repo/.agents/skills");
+    expect(prompt).toContain("[global Claude] ~/.claude/skills");
+    expect(prompt).toContain("[global Codex/agents] ~/.agents/skills");
+    expect(prompt).toContain("$" + "{XDG_CONFIG_HOME:-~/.config}/agents/skills");
+    expect(prompt).toContain(
+      "Use existing skill names, descriptions, and instructions to suppress workflows that are already covered.",
+    );
+    expect(prompt).toContain(
+      "If a workflow is only partially covered by an existing skill, keep it only when the missing behavior is substantial",
+    );
+    expect(prompt).toContain("Do not create any files during discovery.");
+    expect(prompt).toContain(
+      "Present a human-readable Markdown table directly in this agent window.",
+    );
+    expect(prompt).toContain(
+      "| Skill name | Summary | Reason | Confidence | Scope | Repeats | Representative prompts | Source paths |",
+    );
+    expect(prompt).toContain("Order rows by your opinionated recommendation");
+    expect(prompt).toContain("Ask the user which skill or skills they want to implement.");
+    expect(prompt).toContain("Wait for the user's answer before creating or modifying files.");
+    expect(prompt).toContain(
+      "ask whether the user wants the skill installed project-local to the command path or global under the user's home directory",
+    );
+    expect(prompt).toContain("/repo/.claude/skills/<name>/SKILL.md");
+    expect(prompt).toContain("/repo/.agents/skills/<name>/SKILL.md");
+    expect(prompt).toContain("~/.claude/skills/<name>/SKILL.md");
+    expect(prompt).toContain("~/.agents/skills/<name>/SKILL.md");
+    expect(prompt).toContain("$" + "{XDG_CONFIG_HOME:-~/.config}/agents/skills/<name>/SKILL.md");
+    expect(prompt).toContain("Do not assume project-local just because the command was launched");
+    expect(prompt).not.toContain("Report path:");
+    expect(prompt).not.toContain(".ritual");
   });
 
-  it("uses a stable Ritual sessions path for discovery reports", () => {
-    expect(agentDiscoveryReportPath("/repo", new Date("2026-06-20T01:02:03.004Z"))).toBe(
-      path.join("/repo", ".ritual", "sessions", "agent-discovery-2026-06-20T01-02-03-004Z.json"),
+  it("launches discovery as an inherited agent session", async () => {
+    const invocations: Array<{ invocation: CommandInvocation; cwd: string }> = [];
+    const launcher: CommandLauncher = {
+      async launch(invocation: CommandInvocation, options: { cwd: string }): Promise<number> {
+        invocations.push({ invocation, cwd: options.cwd });
+        return 0;
+      },
+    };
+
+    await expect(
+      launchAgentDiscoverySession({
+        cwd: "/repo",
+        sources: [{ kind: "codex", path: "/history.jsonl" }],
+        executable: "claude",
+        launcher,
+      }),
+    ).resolves.toBe(0);
+
+    expect(invocations).toHaveLength(1);
+    expect(invocations[0]?.cwd).toBe("/repo");
+    expect(invocations[0]?.invocation.command).toBe("claude");
+    expect(invocations[0]?.invocation.args.at(-1)).toContain(
+      "Ask the user which skill or skills they want to implement.",
     );
   });
 });

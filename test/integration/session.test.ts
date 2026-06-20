@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { access, mkdtemp, writeFile } from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +17,7 @@ class QueuePrompts implements PromptAdapter {
   readonly inputs: string[];
   readonly selects: string[];
   readonly checkboxes: string[][];
+  readonly selectMessages: string[] = [];
 
   constructor(options: {
     confirms: boolean[];
@@ -46,7 +47,8 @@ class QueuePrompts implements PromptAdapter {
     return value;
   }
 
-  async select<Value extends string>(): Promise<Value> {
+  async select<Value extends string>(message: string): Promise<Value> {
+    this.selectMessages.push(message);
     const value = this.selects.shift();
     if (value === undefined) {
       throw new Error("Missing select answer.");
@@ -81,33 +83,9 @@ class MockLauncher implements CommandLauncher {
   async launch(invocation: CommandInvocation, options: { cwd: string }): Promise<number> {
     this.invocations.push({ invocation, cwd: options.cwd });
     const prompt = invocation.args.at(-1) ?? "";
-    const reportPath = discoveryReportPath(prompt);
-    if (reportPath !== undefined) {
-      await nodeFileSystem.writeTextAtomic(
-        reportPath,
-        JSON.stringify({
-          candidates: [
-            {
-              name: "pr-review-workflow",
-              summary: "Review TypeScript pull requests for correctness and test coverage.",
-              rationale:
-                "Multiple recorded sessions ask for the same pull request review workflow.",
-              confidence: "high",
-              scope: "project",
-              representativePrompts: [
-                "Review this TypeScript PR for correctness bugs and missing Vitest tests.",
-                "Please review this TypeScript pull request for bugs and missing tests.",
-                "Review this TypeScript PR for CI risks, bugs, and missing coverage.",
-              ],
-              sourcePaths: [path.join(options.cwd, "history.jsonl")],
-              repeatCount: 3,
-            },
-          ],
-        }),
-      );
+    if (prompt.includes("selected local agent window")) {
       return 0;
     }
-
     await nodeFileSystem.writeTextAtomic(
       this.skillPath,
       [
@@ -127,11 +105,6 @@ class MockLauncher implements CommandLauncher {
   }
 }
 
-function discoveryReportPath(prompt: string): string | undefined {
-  const match = /Report path:\n(.+)\n\nTask:/u.exec(prompt);
-  return match?.[1];
-}
-
 describe("interactive session", () => {
   it("runs the happy path without touching real history or skill roots", async () => {
     const cwd = await mkdtemp(path.join(os.tmpdir(), "ritual-session-cwd-"));
@@ -149,9 +122,9 @@ describe("interactive session", () => {
     const outputs: string[] = [];
     const prompts = new QueuePrompts({
       confirms: [true, true],
-      inputs: [fixturePath, "pr-review-workflow"],
-      selects: ["codex", "claude", "agent-candidate-1", "project", "claude"],
-      checkboxes: [["claude", "codex"]],
+      inputs: [fixturePath],
+      selects: ["codex", "claude"],
+      checkboxes: [],
     });
 
     const result = await runInteractiveSession({
@@ -165,25 +138,24 @@ describe("interactive session", () => {
       launcher,
     });
 
-    expect(result.status).toBe("completed");
-    expect(launcher.invocations).toHaveLength(2);
+    expect(result).toEqual({ status: "handed-off", executable: "claude" });
+    expect(launcher.invocations).toHaveLength(1);
     expect(launcher.invocations[0]?.invocation.command).toBe("claude");
     expect(launcher.invocations[0]?.invocation.args[0]).toBe("--dangerously-skip-permissions");
     expect(launcher.invocations[0]?.invocation.args.at(-1)).toContain(
-      "Analyze local recorded Claude and Codex sessions",
+      "You are running inside the user's selected local agent window.",
     );
-    expect(launcher.invocations[1]?.invocation.args.at(-1)).toContain(
-      "Create exactly one reusable agent skill and write it directly to this file:",
+    expect(launcher.invocations[0]?.invocation.args.at(-1)).toContain(
+      "Ask the user which skill or skills they want to implement.",
     );
     expect(launcher.invocations[0]?.cwd).toBe(cwd);
-    expect(launcher.invocations[1]?.cwd).toBe(cwd);
 
-    const codexPath = path.join(cwd, ".agents", "skills", "pr-review-workflow", "SKILL.md");
-    await expect(readFile(claudePath, "utf8")).resolves.toContain("name: pr-review-workflow");
-    await expect(readFile(codexPath, "utf8")).resolves.toContain("name: pr-review-workflow");
+    await expect(access(claudePath)).rejects.toThrow();
+    await expect(access(path.join(cwd, ".ritual"))).rejects.toThrow();
     expect(outputs.some((line) => line.includes("found 3 user prompts"))).toBe(true);
-    expect(outputs.some((line) => line.includes("Agent found 1 skill candidate"))).toBe(true);
-    expect(outputs.some((line) => line.includes("Representative workflow examples"))).toBe(true);
+    expect(
+      outputs.some((line) => line.includes("present a table, and ask what to implement")),
+    ).toBe(true);
     expect(outputs.some((line) => line.toLowerCase().includes("draft"))).toBe(false);
   });
 
@@ -247,9 +219,9 @@ describe("interactive session", () => {
     const outputs: string[] = [];
     const prompts = new QueuePrompts({
       confirms: [true, true],
-      inputs: [historyPath, "pr-review-workflow"],
-      selects: ["codex", "claude", "agent-candidate-1", "project", "claude"],
-      checkboxes: [["claude"]],
+      inputs: [historyPath],
+      selects: ["codex", "claude"],
+      checkboxes: [],
     });
 
     const result = await runInteractiveSession({
@@ -263,12 +235,12 @@ describe("interactive session", () => {
       launcher,
     });
 
-    expect(result.status).toBe("completed");
-    expect(launcher.invocations).toHaveLength(2);
+    expect(result).toEqual({ status: "handed-off", executable: "claude" });
+    expect(launcher.invocations).toHaveLength(1);
     expect(launcher.invocations[0]?.invocation.args.at(-1)).toContain(
-      "Analyze local recorded Claude and Codex sessions",
+      "You are running inside the user's selected local agent window.",
     );
-    await expect(readFile(claudePath, "utf8")).resolves.toContain("name: pr-review-workflow");
-    expect(outputs.some((line) => line.includes("Agent found 1 skill candidate"))).toBe(true);
+    await expect(access(claudePath)).rejects.toThrow();
+    await expect(access(path.join(cwd, ".ritual"))).rejects.toThrow();
   });
 });

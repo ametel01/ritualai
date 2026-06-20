@@ -6,14 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-20
+
 ### Added
 
-- Add an agent-led discovery pass that hands local session/history paths to the selected local agent, reads structured JSON findings back into the CLI, and lets the user choose which finding should become a skill inside the same Ritual session.
+- Add an agent-led discovery handoff that opens the selected local agent with session/history paths, asks it to present a Markdown candidate table with an opinionated recommendation, and lets the user choose and implement skills inside that same agent window.
 
 ### Changed
 
-- Preserve Ritual's local repeated-workflow ranking as a fallback when agent discovery is declined, unavailable, fails, or returns no usable candidates.
+- Preserve Ritual's local repeated-workflow ranking as a fallback when agent discovery is declined, unavailable, or exits unsuccessfully.
 - Allow agent discovery to inspect readable session/history paths even when Ritual's local prompt extractor finds no user prompts.
+- Keep discovery itself file-free until the user approves a skill implementation inside the agent window.
+- Require agent discovery to account for existing project/global Claude and Codex/agents skills before proposing new candidates.
+- Require the agent to ask whether selected skills should be installed project-local to the current command path or global under the user's home directory before writing files.
 
 ## [0.2.0] - 2026-06-20
 

@@ -1,5 +1,4 @@
 import * as os from "node:os";
-import * as path from "node:path";
 import { discoverHistorySources, scanHistorySources } from "../history/discover.js";
 import type { HistorySource } from "../history/types.js";
 import {
@@ -8,11 +7,7 @@ import {
   strongCandidates,
 } from "../prompts/rank.js";
 import type { WorkflowCandidate } from "../prompts/types.js";
-import {
-  agentDiscoveryReportPath,
-  launchAgentDiscovery,
-  parseAgentDiscoveryReport,
-} from "../skills/agent-discovery.js";
+import { launchAgentDiscoverySession } from "../skills/agent-discovery.js";
 import {
   buildDraftInvocation,
   type DraftExecutable,
@@ -60,6 +55,7 @@ export type InteractiveOptions = {
 
 export type SessionResult =
   | { status: "completed"; writtenPaths: string[]; skillPath: string }
+  | { status: "handed-off"; executable: DraftExecutable }
   | { status: "cancelled"; reason: string };
 
 export async function runInteractiveSession(
@@ -109,15 +105,9 @@ export async function runInteractiveSession(
     output,
     sources,
     cwd,
-    homeDir,
-    fs,
     runner,
     launcher,
-    spinner,
   });
-  if (agentDiscovery.status === "cancelled") {
-    return { status: "cancelled", reason: "No candidate was approved." };
-  }
   if (agentDiscovery.status === "fallback") {
     output.write(agentDiscovery.reason);
     if (scan.prompts.length === 0) {
@@ -127,19 +117,19 @@ export async function runInteractiveSession(
       };
     }
   }
+  if (agentDiscovery.status === "handed-off") {
+    return agentDiscovery;
+  }
 
-  const candidate =
-    agentDiscovery.status === "selected"
-      ? agentDiscovery.candidate
-      : await selectLocallyRankedCandidate({
-          prompts,
-          output,
-          scanPrompts: scan.prompts,
-          cwd,
-          homeDir,
-          fs,
-          spinner,
-        });
+  const candidate = await selectLocallyRankedCandidate({
+    prompts,
+    output,
+    scanPrompts: scan.prompts,
+    cwd,
+    homeDir,
+    fs,
+    spinner,
+  });
   if (candidate === undefined) {
     return { status: "cancelled", reason: "No candidate was approved." };
   }
@@ -256,20 +246,16 @@ async function removeCoveredCandidates(options: {
 }
 
 type CandidateDiscoverySelection =
-  | { status: "selected"; candidate: WorkflowCandidate }
-  | { status: "fallback"; reason: string }
-  | { status: "cancelled" };
+  | { status: "handed-off"; executable: DraftExecutable }
+  | { status: "fallback"; reason: string };
 
 async function selectAgentDiscoveredCandidate(options: {
   prompts: PromptAdapter;
   output: Output;
   sources: HistorySource[];
   cwd: string;
-  homeDir: string;
-  fs: FileSystem;
   runner: CommandRunner;
   launcher: CommandLauncher;
-  spinner: SpinnerFactory;
 }): Promise<CandidateDiscoverySelection> {
   if (options.sources.length === 0) {
     return {
@@ -295,16 +281,15 @@ async function selectAgentDiscoveredCandidate(options: {
     };
   }
 
-  const reportPath = agentDiscoveryReportPath(options.cwd);
-  await options.fs.ensureDir(path.dirname(reportPath));
   const invocationPreview = previewInvocation(executable);
-  options.output.write(`Discovery report: ${reportPath}`);
   options.output.write(`Agent command: ${invocationPreview} <generated discovery prompt>`);
+  options.output.write(
+    "The agent will review the session paths, present a table, and ask what to implement.",
+  );
 
-  const exitCode = await launchAgentDiscovery({
+  const exitCode = await launchAgentDiscoverySession({
     cwd: options.cwd,
     sources: options.sources,
-    reportPath,
     executable,
     launcher: options.launcher,
   });
@@ -315,52 +300,7 @@ async function selectAgentDiscoveredCandidate(options: {
     };
   }
 
-  let reportContent: string;
-  try {
-    reportContent = await options.fs.readText(reportPath);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "unknown read error";
-    return {
-      status: "fallback",
-      reason: `Discovery agent did not write a readable report (${message}), so Ritual is using local repeated-workflow ranking.`,
-    };
-  }
-
-  const parsed = parseAgentDiscoveryReport(reportContent, options.sources);
-  for (const warning of parsed.warnings) {
-    options.output.write(`[warning] ${warning}`);
-  }
-  if (parsed.candidates.length === 0) {
-    return {
-      status: "fallback",
-      reason:
-        "Discovery agent did not return skill candidates, so Ritual is using local repeated-workflow ranking.",
-    };
-  }
-
-  const uncoveredCandidates = await removeCoveredCandidates({
-    candidates: parsed.candidates,
-    cwd: options.cwd,
-    homeDir: options.homeDir,
-    fs: options.fs,
-    output: options.output,
-  });
-  if (uncoveredCandidates.length === 0) {
-    return {
-      status: "fallback",
-      reason:
-        "All agent-discovered candidates are already covered by existing skills, so Ritual is using local repeated-workflow ranking.",
-    };
-  }
-
-  options.output.write(
-    `Agent found ${uncoveredCandidates.length} skill candidate${uncoveredCandidates.length === 1 ? "" : "s"}.`,
-  );
-  const candidate = await reviewCandidates(options.prompts, options.output, uncoveredCandidates);
-  if (candidate === undefined) {
-    return { status: "cancelled" };
-  }
-  return { status: "selected", candidate };
+  return { status: "handed-off", executable };
 }
 
 async function selectLocallyRankedCandidate(options: {
@@ -417,7 +357,7 @@ async function reviewCandidates(
   }
 
   while (pool.length > 0) {
-    const choice = await prompts.select("Choose a repeated workflow", [
+    const choice = await prompts.select("Choose a skill to implement", [
       ...pool.map((candidate) => ({
         name: candidateMenuLabel(candidate),
         value: candidate.id,
